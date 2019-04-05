@@ -1,0 +1,71 @@
+
+rule index_bam_file:
+    conda:
+        pipeline_path + "envs/bwa-samtools.yml"
+    input:
+        "{any_bam}.bam"
+    output:
+        temp("{any_bam}.bam.bai"),
+    shell:
+        """
+        samtools index {input[0]}
+        """
+
+
+rule index_reference_fasta:
+    conda:
+        pipeline_path + "envs/bwa-samtools.yml"
+    input:
+        "reference/GCA_000092785.1_ASM9278v1_genomic.fna"
+    output:
+        "reference/GCA_000092785.1_ASM9278v1_genomic.fna.fai",
+        "reference/GCA_000092785.1_ASM9278v1_genomic.fna.bwt",
+    shell:
+        """
+        samtools faidx {input[0]} &> /dev/null
+        bwa index {input[0]} &>> /dev/null
+        """
+
+rule map_single_reads_with_bwa:
+    conda:
+        pipeline_path + "envs/bwa-samtools.yml"
+    params:
+        platform = "ILLUMINA"
+    input:
+        fastq = "samples/{sample}/reads/trimmed/single.fastq",
+        ref = "reference/GCA_000092785.1_ASM9278v1_genomic.fna",
+        ref_index = "reference/GCA_000092785.1_ASM9278v1_genomic.fna.bwt",
+    output:
+        temp("samples/{sample}/mapping/bwa/GCA_000092785.bam"),
+    log:
+        logging_folder+"samples/{sample}/logs/mapping/bwa/GCA_000092785/log.txt"
+    shell:
+        """
+        if ls {output[0]}.tmp* 1> /dev/null 2>&1
+        then
+             rm {output[0]}.tmp*
+        fi
+        (bwa mem -R '@RG\\tID:{wildcards.sample}\\tSM:{wildcards.sample}\\tPL:{params.platform}' {input[ref]} {input[fastq]} -v 1 | samtools sort -O BAM -o {output[0]}) 2> {log}
+        """
+
+rule map_single_reads_subset_with_bwa:
+    conda:
+        pipeline_path + "envs/bwa-samtools.yml"
+    params:
+        platform = "ILLUMINA"
+    input:
+        fastq = "samples/{sample}/mapping/bwa/GCA_000092785_mapped_sample_{count}.fastq",
+        ref = "reference/GCA_000092785.1_ASM9278v1_genomic.fna",
+        ref_index = "reference/GCA_000092785.1_ASM9278v1_genomic.fna.bwt",
+    output:
+        temp("samples/{sample}/mapping/bwa/sample_{count}/GCA_000092785.bam"),
+    log:
+        logging_folder+"samples/{sample}/logs/mapping/bwa/sample_{count}/GCA_000092785/log.txt"
+    shell:
+        """
+        if ls {output[0]}.tmp* 1> /dev/null 2>&1
+        then
+             rm {output[0]}.tmp*
+        fi
+        (bwa mem -R '@RG\\tID:{wildcards.sample}\\tSM:{wildcards.sample}\\tPL:{params.platform}' {input[ref]} {input[fastq]} -v 1 | samtools sort -O BAM -o {output[0]}) 2> {log}
+        """

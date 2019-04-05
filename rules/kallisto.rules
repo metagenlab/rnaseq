@@ -1,0 +1,38 @@
+
+
+rule get_reference_cds:
+    conda:
+        pipeline_path + "envs/cufflinks.yml"
+    input:
+        "reference/GCA_000092785.1_ASM9278v1_genomic.fna",
+        "reference/GCA_000092785.1_ASM9278v1_genomic.gff"
+    output:
+        "reference/GCA_000092785_cds.fasta"
+    shell:
+    """
+    gffread  -g {input[0]} -x {output[1]} {input[1]}
+    """
+
+rule index_reference_cds:
+    conda:
+        pipeline_path + "envs/kallisto.yml"
+    input:
+        "reference/GCA_000092785_cds.fasta"
+    output:
+        "reference/GCA_000092785_cds.idx"
+    shell:
+        """
+        kallisto index -i {output[0]} {input[0]}
+        """
+
+rule index_reference_cds:
+    conda:
+        pipeline_path + "envs/kallisto.yml"
+    input:
+        "reference/GCA_000092785_cds.fasta"
+    output:
+        "reference/GCA_000092785_cds.idx"
+    shell:
+        """
+        kallisto quant -i <indexed_cds.idx> -o <output_folder>  --single -b 100 --single -l <mean> -s <sd> --pseudobam <input_files> > <output.sam>
+        """

@@ -1,0 +1,68 @@
+
+rule extract_mapped_read:
+    conda:
+        pipeline_path + "envs/samtools.yml"
+    input:
+        "samples/{sample}/mapping/bwa/GCA_000092785.bam"
+    output:
+        "samples/{sample}/mapping/bwa/GCA_000092785_mapped.bam"
+    shell:
+        """
+        samtools view -b -F4 {input[0]} > {output[0]}
+        """
+
+rule convert_bam_to_fastq:
+    conda:
+        pipeline_path + "envs/bedtools.yml"
+    input:
+        "samples/{sample}/mapping/bwa/GCA_000092785_mapped.bam"
+    output:
+        "samples/{sample}/mapping/bwa/GCA_000092785_mapped.fastq"
+    shell:
+        """
+        bedtools bamtofastq -i {input[0]} -fq {output[0]}
+        """
+
+rule downsample_reads:
+    conda:
+        pipeline_path + "envs/seqtk.yml"
+    input:
+        "samples/{sample}/mapping/bwa/GCA_000092785_mapped.fastq"
+    output:
+        "samples/{sample}/mapping/bwa/GCA_000092785_mapped_sample_{count}.fastq"
+    shell:
+        """
+        seqtk sample -s100 {input[0]} {wildcards.count} > {output[0]}
+        """
+
+checkpoint mapped_reads_counts:
+    input:
+        "samples/{sample}/mapping/bwa/GCA_000092785_mapped.fastq",
+    output:
+        "samples/{sample}/mapping/bwa/read_count.txt"
+    shell:
+        "echo $(cat {input}|wc -l)/4|bc > {output}"
+
+
+
+
+
+# input function for the rule aggregate
+def aggregate_input(wildcards):
+    # decision based on content of output file
+    with open(checkpoints.mapped_reads_counts.get(sample=wildcards.sample).output[0]) as f:
+        n_reads = int(f.read().strip())
+        lst = []
+        for i in range(500000, n_reads, 500000):
+            lst.append("samples/{sample}/rnaseq/htseq/sample_%s_counts.txt" % i)
+        lst.append("samples/{sample}/rnaseq/htseq/sample_%s_counts.txt" % n_reads)
+    return lst
+
+
+rule aggregate:
+    input:
+        aggregate_input
+    output:
+        "aggregated/{sample}.txt"
+    shell:
+        "touch {output}"
