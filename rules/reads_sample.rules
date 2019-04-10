@@ -59,10 +59,32 @@ def aggregate_input(wildcards):
     return lst
 
 
-rule aggregate:
+rule get_htseq_stats:
     input:
-        aggregate_input
+        gene_counts = aggregate_input
     output:
-        "aggregated/{sample}.txt"
+        "aggregated/htseq_{sample}.tab"
+    script: "scripts/plot_rarefaction.py"
+
+rule merge_htseq_stats:
+    input:
+        file_list = expand("aggregated/htseq_{sample}.tab", sample=read_naming.keys())
+    output:
+        "aggregated/merged_htseq_data.tab"
     shell:
-        "touch {output}"
+        """
+        echo -e "sample\tn_reads\t_not_aligned\t__no_feature\ttotal\tequal_0\tlarger_than_0\tlarger_than_10\tlarger_than_100\tlarger_than_1000\tlarger_than_10000" >> {output[0]}
+        for file in {input}; do
+             cat $file >> {output[0]}
+        done
+        """
+
+rule plot_rarefaction_curve:
+    conda:
+        pipeline_path + "envs/ggplot2-gridextra.yml"
+    input:
+        "aggregated/merged_htseq_data.tab"
+    output:
+        "aggregated/rarefaction.svg",
+        "aggregated/rarefaction.pdf"
+    script: "scripts/plot_rarefaction.R"
