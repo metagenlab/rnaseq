@@ -1,0 +1,10 @@
+channels:
+ - bioconda
+ - conda-forge
+ - r
+dependencies:
+ - bioconductor-edger=3.26.5
+ - bioconductor-rtracklayer=1.44
+ - r-ggplot2
+ - r-pheatmap
+ - r-reshape

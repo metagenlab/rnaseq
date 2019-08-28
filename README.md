@@ -11,4 +11,6 @@
 ## TODO
 
 - [ ] add automated download of reference genome (+ annotation)
-- [ ] normalization of read counts + differential expression analyses
+- [ ] normalization of read counts
+- [ ] differential expression analyses
+- [ ] 
