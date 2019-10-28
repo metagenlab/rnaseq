@@ -1,22 +1,25 @@
 rule merge_counts:
     conda:
-        pipeline_path + "envs/edger.yml"
+        "../envs/edger.yml"
     input:
         htseq_files = expand("samples/{sample}/rnaseq/htseq/counts.txt", sample=read_naming.keys()),
         reference_gff = "reference/GCA_000092785.1_ASM9278v1_genomic.gff",
     output:
         "report/rnaseq/edger/count_table.tsv",
-        "report/rnaseq/edger/cor_plot.pdf"
+        "report/rnaseq/edger/cor_plot.pdf",
+        "report/rnaseq/edger/counts_distribution.pdf"
     script: "scripts/merge_counts.R"
+
 
 rule edger_analysis:
     conda:
-        pipeline_path + "envs/edger.yml"
+        "../envs/edger.yml"
     input:
         count_file = "report/rnaseq/edger/count_table.tsv",
         reference_gff = "reference/GCA_000092785.1_ASM9278v1_genomic.gff",
     params:
-        sample_table = config["local_samples"]
+        sample_table = config["local_samples"],
+        annotation = "annotations/merged_annotation.tab",
     output:
         "report/rnaseq/edger/{condition_1}_vs_{condition_2}/plotMDS.pdf",
         "report/rnaseq/edger/{condition_1}_vs_{condition_2}/volcano.pdf",

@@ -1,7 +1,7 @@
 
 rule index_bam_file:
     conda:
-        pipeline_path + "envs/bwa-samtools.yml"
+        "../../envs/bwa-samtools.yml"
     input:
         "{any_bam}.bam"
     output:
@@ -14,7 +14,7 @@ rule index_bam_file:
 
 rule index_reference_fasta:
     conda:
-        pipeline_path + "envs/bwa-samtools.yml"
+        "../../envs/bwa-samtools.yml"
     input:
         "reference/GCA_000092785.1_ASM9278v1_genomic.fna"
     output:
@@ -28,7 +28,7 @@ rule index_reference_fasta:
 
 rule map_single_reads_with_bwa:
     conda:
-        pipeline_path + "envs/bwa-samtools.yml"
+        "../../envs/bwa-samtools.yml"
     params:
         platform = "ILLUMINA"
     input:
@@ -50,7 +50,7 @@ rule map_single_reads_with_bwa:
 
 rule map_single_reads_subset_with_bwa:
     conda:
-        pipeline_path + "envs/bwa-samtools.yml"
+        "../../envs/bwa-samtools.yml"
     params:
         platform = "ILLUMINA"
     input:

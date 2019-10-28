@@ -1,7 +1,7 @@
 
 rule extract_mapped_read:
     conda:
-        pipeline_path + "envs/samtools.yml"
+        "../../envs/samtools.yml"
     input:
         "samples/{sample}/mapping/bwa/GCA_000092785.bam"
     output:
@@ -13,7 +13,7 @@ rule extract_mapped_read:
 
 rule convert_bam_to_fastq:
     conda:
-        pipeline_path + "envs/bedtools.yml"
+        "../../envs/bedtools.yml"
     input:
         "samples/{sample}/mapping/bwa/GCA_000092785_mapped.bam"
     output:
@@ -25,7 +25,7 @@ rule convert_bam_to_fastq:
 
 rule downsample_reads:
     conda:
-        pipeline_path + "envs/seqtk.yml"
+        "../../envs/seqtk.yml"
     input:
         "samples/{sample}/mapping/bwa/GCA_000092785_mapped.fastq"
     output:
@@ -81,7 +81,7 @@ rule merge_htseq_stats:
 
 rule plot_rarefaction_curve:
     conda:
-        pipeline_path + "envs/ggplot2-gridextra.yml"
+        "../../envs/ggplot2-gridextra.yml"
     input:
         "aggregated/merged_htseq_data.tab"
     output:

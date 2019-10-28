@@ -50,3 +50,10 @@ heatmap.plotting.replicates <- function(x, name){
 pdf(snakemake@output[[2]])
 heatmap.plotting.replicates(read_counts, "Heatmap samples similarity")
 dev.off()
+
+# PLOT histotgramm rawcounts 
+pdf(snakemake@output[[3]])
+    for (i in 1:length(read_counts[1,])){
+        hist(read_counts[,i], main=paste("Histogram on Raw Counts for", colnames(read_counts)[[i]]))
+    } 
+dev.off()

@@ -2,7 +2,7 @@
 
 rule get_reference_cds:
     conda:
-        pipeline_path + "envs/cufflinks.yml"
+        "../../envs/cufflinks.yml"
     input:
         "reference/GCA_000092785.1_ASM9278v1_genomic.fna",
         "reference/GCA_000092785.1_ASM9278v1_genomic.gff"
@@ -15,7 +15,7 @@ rule get_reference_cds:
 
 rule index_reference_cds:
     conda:
-        pipeline_path + "envs/kallisto.yml"
+        "../../envs/kallisto.yml"
     input:
         "reference/GCA_000092785_cds.fasta"
     output:
@@ -27,7 +27,7 @@ rule index_reference_cds:
 
 rule index_reference_cds:
     conda:
-        pipeline_path + "envs/kallisto.yml"
+        "../../envs/kallisto.yml"
     input:
         "reference/GCA_000092785_cds.fasta"
     output:
