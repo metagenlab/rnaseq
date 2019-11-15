@@ -1,0 +1,29 @@
+name: python-r
+channels:
+ - plotly
+ - bioconda
+ - conda-forge
+ - r
+dependencies:
+ - biopython = 1.72
+ - plotly = 4*
+ - scipy
+ - pandas
+ - networkx
+ - pyvcf
+ - xlrd
+ - simplejson
+ - openpyxl
+ - pronto
+ - jinja2
+ - ete3
+ - matplotlib
+ - cairo
+ - r-base
+ - r-svglite
+ - r-gridextra
+ - r-ggplot2
+ - r-egg
+ - r-gdtools >=0.1.6,<0.2
+ - r-igraph
+ - r-networkd3
