@@ -5,13 +5,13 @@ rule assess_mapping_with_qualimap:
         "../../envs/qualimap.yml"
     input:
         # samples/{sample}/mapping/bwa/{ref}.bam
-        bam = "samples/{sample}/mapping/bwa/GCA_000092785.bam",
-        bam_bai = "samples/{sample}/mapping/bwa/GCA_000092785.bam.bai"
+        bam = "samples/{sample}/mapping/bwa/reference_genome.bam",
+        bam_bai = "samples/{sample}/mapping/bwa/reference_genome.bam.bai"
     output:
-        report = "report/qualimap/{sample}/bwa/GCA_000092785/qualimapReport.html",
-        genome_results = "report/qualimap/{sample}/bwa/GCA_000092785/genome_results.txt",
+        report = "report/qualimap/{sample}/bwa/reference_genome/qualimapReport.html",
+        genome_results = "report/qualimap/{sample}/bwa/reference_genome/genome_results.txt",
     log:
-        logging_folder+"samples/{sample}/logs/bwa/GCA_000092785/qualimap.txt",
+        logging_folder+"samples/{sample}/logs/bwa/reference_genome/qualimap.txt",
     shell:
         """
         qualimap bamqc -bam {input[bam]} -outdir $(dirname {output}) > {log[0]}

@@ -1,7 +1,7 @@
 
 rule index_bam_file:
     conda:
-        "../../envs/bwa-samtools.yml"
+        "../envs/bwa-samtools.yml"
     input:
         "{any_bam}.bam"
     output:
@@ -11,15 +11,14 @@ rule index_bam_file:
         samtools index {input[0]}
         """
 
-
 rule index_reference_fasta:
     conda:
-        "../../envs/bwa-samtools.yml"
+        "../envs/bwa-samtools.yml"
     input:
-        "reference/GCA_000092785.1_ASM9278v1_genomic.fna"
+        "reference/reference_genome.fna"
     output:
-        "reference/GCA_000092785.1_ASM9278v1_genomic.fna.fai",
-        "reference/GCA_000092785.1_ASM9278v1_genomic.fna.bwt",
+        "reference/reference_genome.fna.fai",
+        "reference/reference_genome.fna.bwt",
     shell:
         """
         samtools faidx {input[0]} &> /dev/null
@@ -28,17 +27,17 @@ rule index_reference_fasta:
 
 rule map_single_reads_with_bwa:
     conda:
-        "../../envs/bwa-samtools.yml"
+        "../envs/bwa-samtools.yml"
     params:
         platform = "ILLUMINA"
     input:
         fastq = "samples/{sample}/reads/trimmed/single.fastq",
-        ref = "reference/GCA_000092785.1_ASM9278v1_genomic.fna",
-        ref_index = "reference/GCA_000092785.1_ASM9278v1_genomic.fna.bwt",
+        ref = "reference/reference_genome.fna",
+        ref_index = "reference/reference_genome.fna.bwt",
     output:
-        temp("samples/{sample}/mapping/bwa/GCA_000092785.bam"),
+        temp("samples/{sample}/mapping/bwa/reference_genome.bam"),
     log:
-        logging_folder+"samples/{sample}/logs/mapping/bwa/GCA_000092785/log.txt"
+        logging_folder+"samples/{sample}/logs/mapping/bwa/reference_genome_log.txt"
     shell:
         """
         if ls {output[0]}.tmp* 1> /dev/null 2>&1
@@ -50,17 +49,17 @@ rule map_single_reads_with_bwa:
 
 rule map_single_reads_subset_with_bwa:
     conda:
-        "../../envs/bwa-samtools.yml"
+        "../envs/bwa-samtools.yml"
     params:
         platform = "ILLUMINA"
     input:
-        fastq = "samples/{sample}/mapping/bwa/GCA_000092785_mapped_sample_{count}.fastq",
-        ref = "reference/GCA_000092785.1_ASM9278v1_genomic.fna",
-        ref_index = "reference/GCA_000092785.1_ASM9278v1_genomic.fna.bwt",
+        fastq = "samples/{sample}/mapping/bwa/reference_genome_mapped_sample_{count}.fastq",
+        ref = "reference/reference_genome.fna",
+        ref_index = "reference/reference_genome.fna.bwt",
     output:
-        temp("samples/{sample}/mapping/bwa/sample_{count}/GCA_000092785.bam"),
+        temp("samples/{sample}/mapping/bwa/sample_{count}/reference_genome.bam"),
     log:
-        logging_folder+"samples/{sample}/logs/mapping/bwa/sample_{count}/GCA_000092785/log.txt"
+        logging_folder+"samples/{sample}/logs/mapping/bwa/sample_{count}/reference_genome_log.txt"
     shell:
         """
         if ls {output[0]}.tmp* 1> /dev/null 2>&1

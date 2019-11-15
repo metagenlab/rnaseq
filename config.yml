@@ -2,7 +2,8 @@
 
 sra_samples: example_sra_samples.tsv
 local_samples: example_local_samples.tsv
-#assembly
+
+#trimming
 minimum_quality_base: 28
 minimum_read_length: 30
 sliding_window_size: 5
@@ -11,3 +12,15 @@ adapter_file_name: NexteraPE-PE.fa
 adapter_removal_param1: 3
 adapter_removal_param2: 25
 adapter_removal_param3: 6
+
+# reference genome
+
+assembly_accession: GCF_000005845.2
+NCBI_email: trestan.pillonel@chuv.ch
+
+KEGG_accession: eco
+
+uniprot_proteome: UP000000625
+
+reference_fna: reference/GCA_000092785.1_ASM9278v1_genomic.fna
+reference_gff: reference/GCA_000092785.1_ASM9278v1_genomic.gff

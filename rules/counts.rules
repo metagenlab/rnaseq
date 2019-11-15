@@ -2,10 +2,10 @@
 
 rule htseq_count:
     conda:
-        "../../envs/htseq.yml"
+        "../envs/htseq.yml"
     input:
-        "reference/GCA_000092785.1_ASM9278v1_genomic.gff",
-        "samples/{sample}/mapping/bwa/GCA_000092785.bam"
+        "reference/reference_genome.gff",
+        "samples/{sample}/mapping/bwa/reference_genome.bam"
     output:
         "samples/{sample}/rnaseq/htseq/counts.txt"
     shell:
@@ -15,10 +15,10 @@ rule htseq_count:
 
 rule htseq_count_subsets:
     conda:
-        "../../envs/htseq.yml"
+        "../envs/htseq.yml"
     input:
-        "reference/GCA_000092785.1_ASM9278v1_genomic.gff",
-        "samples/{sample}/mapping/bwa/sample_{count}/GCA_000092785.bam"
+        "reference/reference_genome.gff",
+        "samples/{sample}/mapping/bwa/sample_{count}/reference_genome.bam"
     output:
         "samples/{sample}/rnaseq/htseq/sample_{count}_counts.txt"
     shell:
@@ -28,7 +28,7 @@ rule htseq_count_subsets:
 
 rule counts_summary:
     conda:
-        "../../envs/htseq.yml"
+        "../envs/htseq.yml"
     input:
         htseq_files = expand("samples/{sample}/rnaseq/htseq/counts.txt", sample=read_naming.keys())
     output:

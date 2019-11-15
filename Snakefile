@@ -14,6 +14,7 @@ include: "rules/bwa.rules"
 include: "rules/counts.rules"
 include: "rules/reads_sample.rules"
 include: "rules/edgeR.rules"
+include: "rules/reference_genome.rules"
 
 rule rarefaction:
     input:

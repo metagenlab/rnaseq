@@ -3,7 +3,7 @@ rule merge_counts:
         "../envs/edger.yml"
     input:
         htseq_files = expand("samples/{sample}/rnaseq/htseq/counts.txt", sample=read_naming.keys()),
-        reference_gff = "reference/GCA_000092785.1_ASM9278v1_genomic.gff",
+        reference_gff = "reference/reference_genome.gff",
     output:
         "report/rnaseq/edger/count_table.tsv",
         "report/rnaseq/edger/cor_plot.pdf",
@@ -16,7 +16,7 @@ rule edger_analysis:
         "../envs/edger.yml"
     input:
         count_file = "report/rnaseq/edger/count_table.tsv",
-        reference_gff = "reference/GCA_000092785.1_ASM9278v1_genomic.gff",
+        reference_gff = "reference/reference_genome.gff",
     params:
         sample_table = config["local_samples"],
         annotation = "annotations/merged_annotation.tab",
