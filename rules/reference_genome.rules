@@ -1,0 +1,201 @@
+rule decompress_any:
+    input:
+        "{any}/{file}.gz"
+    output:
+        "{any}/{file}"
+    shell:
+        "gunzip {input[0]}"
+
+if 'reference_fna' in config and 'reference_gff' in config and 'assembly_accession' in config:
+    raise IOError("Either specify the path to gff and fna files or the NCBI assembly accession, not both!")
+
+
+elif 'reference_fna' in config and 'reference_gff' in config:
+
+    rule copy_reference_fna:
+        input:
+            lambda wildcards: config["reference_fna"]
+        output:
+            "reference/reference_genome.fna",
+        shell:
+            """
+            cp {input[0]} {output[0]}
+            """
+
+    rule copy_reference_gff:
+        input:
+            lambda wildcards: config["reference_gff"]
+        output:
+            "reference/reference_genome.gff",
+        shell:
+            """
+            cp {input[0]} {output[0]}
+            """
+
+elif 'assembly_accession' in config:
+
+    rule download_reference_genome:
+        conda:
+            "../envs/python-r.yml"
+        params:
+            assembly_accession = lambda wildcards: config["assembly_accession"],
+            NCBI_email = lambda wildcards: config["NCBI_email"],
+        output:
+            "reference/reference_genome.fna.gz",
+            "reference/reference_genome.gff.gz",
+
+        script: "scripts/download_assembly_from_refseq.py"
+
+else:
+    raise IOError("Either specify the path to gff and fna files or the NCBI assembly accession (but not both)")
+
+
+
+if 'KEGG_accession' in config:
+
+    rule download_annotations_from_KEGG:
+        conda:
+            "../envs/python-r.yml"
+        params:
+            KEGG_accession = lambda wildcards: config["KEGG_accession"]
+        output:
+            "reference/reference_genome_kegg_pathways.txt",
+            "reference/reference_genome_kegg_modules.txt",
+            "reference/reference_genome_kegg_ko.txt",
+            "reference/module_description.txt",
+            "reference/pathway_description.txt",
+            "reference/ko_description.txt"
+
+        shell: 
+            """
+            curl -S http://rest.kegg.jp/link/pathway/{params[0]} > reference/reference_genome_kegg_pathways.txt
+            curl -S http://rest.kegg.jp/link/module/{params[0]} >> reference/reference_genome_kegg_modules.txt
+            curl -S http://rest.kegg.jp/link/ko/{params[0]} >> reference/reference_genome_kegg_ko.txt
+
+            curl -S http://rest.kegg.jp/list/module > reference/module_description.txt
+            curl -S http://rest.kegg.jp/list/pathway > reference/pathway_description.txt
+            curl -S http://rest.kegg.jp/list/ko > reference/ko_description.txt
+            """
+
+if "uniprot_proteome" in config:
+
+    rule download_KO_from_uniprotKB:
+        params:
+            uniprot_proteome = lambda wildcards: config["uniprot_proteome"]  
+        output:
+            "reference/reference_genome_uniprotKB_ko.txt"
+        run:
+            import requests
+
+            url = 'https://sparql.uniprot.org/'
+
+            query = """
+                    PREFIX up:<http://purl.uniprot.org/core/> 
+                    PREFIX keywords:<http://purl.uniprot.org/keywords/> 
+                    PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#> 
+                    SELECT ?protein ?dr $orf
+                    WHERE
+                    {
+                    ?protein a up:Protein ;
+                    up:proteome ?proteome .
+                    ?protein up:encodedBy ?gene .
+                    ?gene up:locusName ?orf .
+                    ?protein rdfs:seeAlso ?dr .
+                    ?dr up:database <http://purl.uniprot.org/database/KO> .  
+                    VALUES (?proteome) {(<http://purl.uniprot.org/proteomes/%s#Chromosome>)}
+                    }
+                    """ % params[0]
+            o = open(output[0], "w")
+            r = requests.get(url, params = {'format': 'json', 'query': query})
+            data = r.json()
+            # {'orf': {'type': 'literal', 'value': 'b2145'}, 'protein': {'type': 'uri', 'value': 'http://purl.uniprot.org/uniprot/P64536'}, 'dr': {'type': 'uri', 'value': 'http://purl.uniprot.org/eggnog/ENOG41129X4'}}
+            for i in data["results"]['bindings']:
+                protein_accesson = i["protein"]["value"].split("/")[-1]
+                locus_tag = i["orf"]["value"]
+                ko = i["dr"]["value"].split("/")[-1]
+                o.write("%s\t%s\n" % (locus_tag, ko))
+            o.close()            
+
+
+    rule download_COG_from_uniprotKB:
+        params:
+            uniprot_proteome = lambda wildcards: config["uniprot_proteome"]  
+        output:
+            "reference/reference_genome_uniprotKB_COG.txt"
+        run:
+            import requests
+
+            url = 'https://sparql.uniprot.org/'
+
+            query = """
+                    PREFIX up:<http://purl.uniprot.org/core/> 
+                    PREFIX keywords:<http://purl.uniprot.org/keywords/> 
+                    PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#> 
+                    SELECT ?protein ?dr $orf
+                    WHERE
+                    {
+                    ?protein a up:Protein ;
+                    up:proteome ?proteome .
+                    ?protein up:encodedBy ?gene .
+                    ?gene up:locusName ?orf .
+                    ?protein rdfs:seeAlso ?dr .
+                    ?dr up:database <http://purl.uniprot.org/database/eggNOG> .  
+                    VALUES (?proteome) {(<http://purl.uniprot.org/proteomes/%s#Chromosome>)}
+                    }
+                    """ % params[0]
+            o = open(output[0], "w")
+            r = requests.get(url, params = {'format': 'json', 'query': query})
+            data = r.json()
+            # {'orf': {'type': 'literal', 'value': 'b2145'}, 'protein': {'type': 'uri', 'value': 'http://purl.uniprot.org/uniprot/P64536'}, 'dr': {'type': 'uri', 'value': 'http://purl.uniprot.org/eggnog/ENOG41129X4'}}
+            for i in data["results"]['bindings']:
+                protein_accesson = i["protein"]["value"].split("/")[-1]
+                locus_tag = i["orf"]["value"]
+                COG = i["dr"]["value"].split("/")[-1]
+                # only keep COG annotations
+                if COG.startswith("COG"):
+                    o.write("%s\t%s\n" % (locus_tag, COG))
+            o.close()            
+
+
+    rule download_eggNOG_annotations:
+        params:
+            uniprot_proteome = lambda wildcards: config["uniprot_proteome"]  
+        output:
+            "reference/NOG.annotations.tsv.gz"
+        shell:
+            """
+            wget http://eggnogdb.embl.de/download/eggnog_4.5/data/NOG/NOG.annotations.tsv.gz -O {output[0]}
+            """
+
+    rule COG2annotations:
+        input:
+            "reference/reference_genome_uniprotKB_COG.txt",
+            "reference/NOG.annotations.tsv.gz"
+        output:
+            "reference/COG_annotations.tsv"
+        run:
+            import gzip
+            COG2annotions = {}
+            f = gzip.open(input[1], 'rb')
+            print(f)
+            for row in f:
+                data = row.decode('utf-8').rstrip().split("\t")
+                COG_accession = data[1]
+                COG_categories = list(data[4])
+                COG_description = data[5]
+                COG2annotions[COG_accession] = {}
+                COG2annotions[COG_accession]["COG_categories"] = COG_categories
+                COG2annotions[COG_accession]["COG_description"] = COG_description
+        
+            fail_count = 0
+            o = open(output[0], "w")
+            with open(input[0], 'r') as g:
+                cog_list = list(set([row.rstrip().split("\t")[1] for row in g]))
+                for COG in cog_list:
+                    try:
+                        for cog_category in COG2annotions[COG]["COG_categories"]:
+                            o.write("%s\t%s\t%s\n" % (COG, cog_category, COG2annotions[COG]["COG_description"]))
+                    except:
+                        print("%s -- FAIL" % COG)
+                        fail_count+=1
+            print("TOTAL FAIL: %s" % fail_count)
