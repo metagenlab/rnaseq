@@ -1,0 +1,16 @@
+
+rule KEGG_statistics:
+    conda:
+        "../envs/python-r.yml"
+    input:
+            count_file ="report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_counts.tsv",
+            locus_tag2pathway = "reference/reference_genome_kegg_pathways.txt",
+            locus_tag2module = "reference/reference_genome_kegg_modules.txt",
+            module2description = "reference/module_description.txt",
+            pathway2description = "reference/pathway_description.txt",
+    output:
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_pathways.tsv",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_modules.tsv",
+
+
+    script: "scripts/KEGG_statistics.py"

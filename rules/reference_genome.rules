@@ -9,7 +9,6 @@ rule decompress_any:
 if 'reference_fna' in config and 'reference_gff' in config and 'assembly_accession' in config:
     raise IOError("Either specify the path to gff and fna files or the NCBI assembly accession, not both!")
 
-
 elif 'reference_fna' in config and 'reference_gff' in config:
 
     rule copy_reference_fna:
@@ -43,13 +42,11 @@ elif 'assembly_accession' in config:
         output:
             "reference/reference_genome.fna.gz",
             "reference/reference_genome.gff.gz",
-
+            "reference/reference_genome.gbff.gz",
         script: "scripts/download_assembly_from_refseq.py"
 
 else:
     raise IOError("Either specify the path to gff and fna files or the NCBI assembly accession (but not both)")
-
-
 
 if 'KEGG_accession' in config:
 
@@ -64,7 +61,7 @@ if 'KEGG_accession' in config:
             "reference/reference_genome_kegg_ko.txt",
             "reference/module_description.txt",
             "reference/pathway_description.txt",
-            "reference/ko_description.txt"
+            "reference/ko_description.txt",
 
         shell: 
             """
@@ -199,3 +196,18 @@ if "uniprot_proteome" in config:
                         print("%s -- FAIL" % COG)
                         fail_count+=1
             print("TOTAL FAIL: %s" % fail_count)
+
+
+    rule combine_annotation:
+        conda:
+            "../envs/python-r.yml"
+        input:
+            "reference/reference_genome.gbff",
+            "reference/reference_genome_uniprotKB_ko.txt",
+            "reference/ko_description.txt",
+            "reference/reference_genome_uniprotKB_COG.txt",
+            "reference/COG_annotations.tsv"
+        output:
+            "annotations/merged_annotation.tab",
+        script:
+            "scripts/merge_annotations.py"
