@@ -14,6 +14,7 @@ include: "rules/bwa.rules"
 include: "rules/counts.rules"
 include: "rules/reads_sample.rules"
 include: "rules/edgeR.rules"
+include: "rules/kegg.rules"
 include: "rules/reference_genome.rules"
 
 rule rarefaction:
@@ -27,9 +28,9 @@ def condition_combination(wildcards):
     file_list = []
     condition_list = list(set(all_samples["condition"]))
     for pair in itertools.combinations(condition_list, 2):
-        cons1, cond2 = pair
-        file_list.append(f'report/rnaseq/edger/{cons1}_vs_{cond2}/plotMDS.pdf')
-    print(file_list)
+        cond1, cond2 = pair
+        file_list.append(f'report/rnaseq/edger/{cond1}_vs_{cond2}/{cond1}_vs_{cond2}_plotMDS.pdf')
+        file_list.append(f'report/rnaseq/edger/{cond1}_vs_{cond2}/{cond1}_vs_{cond2}_modules.tsv')
     return file_list
 
 
