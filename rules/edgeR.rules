@@ -11,19 +11,48 @@ rule merge_counts:
     script: "scripts/merge_counts.R"
 
 
-rule edger_analysis:
-    conda:
-        "../envs/edger.yml"
-    input:
-        count_file = "report/rnaseq/edger/count_table.tsv",
-        reference_gff = "reference/reference_genome.gff",
-    params:
-        sample_table = config["local_samples"],
-        annotation = "annotations/merged_annotation.tab",
-    output:
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/plotMDS.pdf",
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/volcano.pdf",
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/plotSmear.pdf",
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/counts.tsv",
+if config["replicates"]:
+    print("------ replicates ------")
 
-    script: "scripts/edger_analysis.R"
+    rule edger_analysis:
+        conda:
+            "../envs/edger.yml"
+        input:
+            count_file = "report/rnaseq/edger/count_table.tsv",
+            reference_gff = "reference/reference_genome.gff",
+        params:
+            sample_table = config["local_samples"],
+            annotation = "annotations/merged_annotation.tab",
+        output:
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_plotMDS.pdf",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_volcano_FDR0.01_logFC2.pdf",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_volcano_FDR0.01_logFC1.pdf",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_plotSmear_FRD0.1.pdf",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_heatmap_top_100_order_FDR.svg",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_counts.tsv",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_heatmap_top_100_down_order_logFC.svg",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_heatmap_top_100_up_order_logFC.svg",
+
+        script: "scripts/edger_analysis.R"
+
+else:
+    print("------ no replicates ------")
+    rule edger_analysis_no_replicates:
+        conda:
+            "../envs/edger.yml"
+        input:
+            count_file = "report/rnaseq/edger/count_table.tsv",
+            reference_gff = "reference/reference_genome.gff",
+        params:
+            sample_table = config["local_samples"],
+            annotation = "annotations/merged_annotation.tab",
+        output:
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_plotMDS.pdf",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_plotSmear.pdf",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_counts.tsv",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_heatmap_top_100.pdf",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_heatmap_top_100_down.pdf",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_heatmap_top_100_up.pdf",
+
+        script: "scripts/edger_analysis_no_replicates.R"
+
