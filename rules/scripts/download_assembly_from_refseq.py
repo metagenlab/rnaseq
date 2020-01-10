@@ -34,11 +34,20 @@ path=ftp_path_refseq.split('ftp://ftp.ncbi.nlm.nih.gov/')[1]
 ftp_login.cwd(path)
 logging.info('Downloading from : {0}'.format(path))
 logging.info('Downloading to {0}'.format(snakemake.output[0]))
+
+ftp_login.retrbinary("RETR "+redundant_name+'_genomic.gbff.gz',
+                        open(os.path.join(os.getcwd(),snakemake.output[2]),"wb").write)
+
 ftp_login.retrbinary("RETR "+redundant_name+'_genomic.fna.gz',
                         open(os.path.join(os.getcwd(),snakemake.output[0]),"wb").write)
+
 logging.info('Downloading to {0}'.format(snakemake.output[0]))
+
 ftp_login.retrbinary("RETR "+redundant_name+'_genomic.gff.gz',
                         open(os.path.join(os.getcwd(),snakemake.output[1]),"wb").write)
+
+
+                        
 logging.info('Done')
 
 
