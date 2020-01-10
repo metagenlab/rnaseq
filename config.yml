@@ -24,3 +24,6 @@ uniprot_proteome: UP000000625
 
 reference_fna: reference/GCA_000092785.1_ASM9278v1_genomic.fna
 reference_gff: reference/GCA_000092785.1_ASM9278v1_genomic.gff
+reference_gbk: reference/GCA_000092785.1_ASM9278v1_genomic.gff
+
+replicates: true
