@@ -8,6 +8,7 @@ dependencies:
  - biopython = 1.72
  - plotly = 4*
  - scipy
+ - bcbio-gff
  - pandas
  - networkx
  - pyvcf
