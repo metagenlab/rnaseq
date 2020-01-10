@@ -4,6 +4,8 @@ library("rtracklayer")
 library("reshape2")
 library("ggplot2")
 library("pheatmap")
+library("stringr")
+library("svglite")
 
 split_path <- function(path) {
   if (dirname(path) %in% c(".", path)) return(basename(path))
@@ -33,11 +35,7 @@ rownames(annotations) <- annotations$locus_tag
 
 m <- match(annotations$locus_tag, custom_annotation_table$locus_tag)
 
-print(m)
 annotations <- cbind(annotations, custom_annotation_table[m,])
-
-print(head(annotations))
-dim(annotations)
 
 # get DGEList
 y <- DGEList(counts=read_counts, 
@@ -47,14 +45,13 @@ y <- DGEList(counts=read_counts,
 
 
 keep <- filterByExpr(y)
-print("KEEP:")
-table(keep)
+
 y <- y[keep, , keep.lib.sizes=FALSE]
 y <- calcNormFactors(y)
 y$samples
 
 pdf(snakemake@output[[1]])
-plotMDS(y, top = 1000, labels = y$samples$SampleName, col = as.numeric(y$samples$group), 
+  plotMDS(y, top = 1000, labels = y$samples$SampleName, col = as.numeric(y$samples$group), 
         pch = as.numeric(y$samples$group), cex = 2)
 dev.off()
 
@@ -71,26 +68,42 @@ de <- exactTest(d, pair = c(cond2, cond1))
 tT <- topTags(de, n = nrow(d))
 # tabular form of differentially expressed genes 
 deg.list <- tT$table
+w <- which(tT$table$FDR <.01 & abs(tT$table$logFC) > 1)
+tT$table$signif <- FALSE
+tT$table$signif[w] <- TRUE
 
 locus_tags <- rownames(deg.list)
 # select genes that have 10% false discovery rate
 top.deg <- locus_tags[deg.list$FDR < .01]
-print("deg.list$")
-head(deg.list)
-## For students - VOLCANO PLOT
+
+## VOLCANO PLOT
 pdf(snakemake@output[[2]])
-plot(deg.list$logFC, -log10(deg.list$PValue), 
-     pch=20, main=paste(cond1, "vs", cond2, "comparison"),
-     xlab = "Log2 Fold Change", ylab = "-log10(pvalue)")
-with(subset(deg.list, FDR<.01 & abs(logFC)>2), 
-     points(logFC, -log10(PValue), pch=20, col="red"))
-s <- subset(deg.list, FDR<.01 & abs(logFC)>2)
-text(s$logFC, -log10(s$PValue), labels = paste(s$locus_tag, s$KO))
-abline(v=2, lty=2, lwd=1, col="lightblue")
-abline(v=-2, lty=2, lwd=1, col="lightblue")
+  plot(deg.list$logFC, -log10(deg.list$FDR), # PValue
+      pch=20, main=paste(cond1, "vs", cond2, "comparison"),
+      xlab = "Log2 Fold Change", ylab = "-log10(FDR)",
+      xlim=c(-max(abs(deg.list$logFC))*1.1, max(abs(deg.list$logFC))*1.1) )
+  with(subset(deg.list, FDR <.01 & abs(logFC)>2), 
+      points(logFC, -log10(FDR), pch=20, col="red"))
+  s <- subset(deg.list, FDR<.01 & abs(logFC)>2)
+  text(s$logFC, -log10(s$FDR), labels = paste(s$locus_tag, s$KO))
+  abline(v=2, lty=2, lwd=1, col="lightblue")
+  abline(v=-2, lty=2, lwd=1, col="lightblue")
 dev.off()
 
 pdf(snakemake@output[[3]])
+  plot(deg.list$logFC, -log10(deg.list$FDR), 
+  pch=20, main=paste(cond1, "vs", cond2, "comparison"),
+  xlab = "Log2 Fold Change", ylab = "-log10(FDR)", 
+  xlim=c(-max(abs(deg.list$logFC))*1.1, max(abs(deg.list$logFC))*1.1))
+  with(subset(deg.list, FDR <.01 & abs(deg.list$logFC) > 1), 
+  points(logFC, -log10(FDR), pch=20, col="red"))
+  s <- subset(deg.list, FDR <.01 & abs(deg.list$logFC) > 1)
+  text(s$logFC, -log10(s$FDR), labels = paste(s$locus_tag, s$KO))
+  abline(v=1, lty=2, lwd=1, col="lightblue")
+  abline(v=-1, lty=2, lwd=1, col="lightblue")
+dev.off()
+
+pdf(snakemake@output[[4]])
 plotSmear(de, de.tags = top.deg, main = paste(cond1, "vs", cond2, "comparison"))
 dev.off()
 
@@ -114,33 +127,103 @@ ggplot(dfFilter, aes(x=sample, y=value)) +
   geom_boxplot(outlier.colour="red", outlier.shape=8, outlier.size=4)+ facet_wrap(~ condition)
 dev.off()
 
-
 annotations$gene_length <- (annotations$end - annotations$start) + 1
 m <- match(rownames(de$genes), rownames(annotations))
 y$genes$length <- annotations$gene_length[m]
-head(y$genes)
-print("rpkm")
+
 genes_rpkm <- rpkm(y)
-print("ok")
-head(genes_rpkm)
 
+considered_samples <- sample_info_table$SampleName[sample_info_table$condition %in% c(cond1, cond2)]
+considered_samples <- str_replace(considered_samples, "-", ".")
 
-considered_samples <- sample_info_table$OldSampleName[sample_info_table$condition %in% c(cond1, cond2)]
-print("considered_samples")
-print(considered_samples)
-print("topgenes")
 log_rpkm.topgenes <- log2(genes_rpkm[rownames(deg.list[1:100,]), considered_samples]+1)
 m <- match(rownames(log_rpkm.topgenes), custom_annotation_table$locus_tag)
+
 gene <- custom_annotation_table$gene[m]
 product <- custom_annotation_table$product[m]
 annot <- paste0(rownames(log_rpkm.topgenes), '/', gene, '/', product)
 rownames(log_rpkm.topgenes) <- annot
 
-pdf(paste0("pheatmap_", cond1, "_vs_", cond2, ".pdf"), height=17, width=10)
-#my_sample_col <- data.frame(sample = sample_info_table$condition)
-#row.names(my_sample_col) <- colnames(log_rpkm.topgenes)
-#print(log_rpkm.topgenes)
-pheatmap(log_rpkm.topgenes, main = paste('Heatmap of top 100 genes:', cond1, " vs ", cond2)) # , annotation_col=my_sample_col
+log_rpkm.topgenes_FC <- tT[custom_annotation_table$locus_tag[m],"logFC"]
+
+metadata_gene <- data.frame(up_or_down=rep("gg", nrow(log_rpkm.topgenes_FC)),
+                            row.names=rownames(log_rpkm.topgenes), stringsAsFactors=FALSE
+                            )
+
+metadata_gene$up_or_down[which(log_rpkm.topgenes_FC[[1]]$logFC > 0)] <- "up"
+metadata_gene$up_or_down[which(log_rpkm.topgenes_FC[[1]]$logFC < 0)] <- "down"
+metadata_gene$up_or_down <- as.factor(metadata_gene$up_or_down)
+
+w <- length(considered_samples)*2.5 + nchar(max(rownames(log_rpkm.topgenes))) / 10
+
+svglite(snakemake@output[[5]], height=23, width=w)
+pheatmap(log_rpkm.topgenes[,considered_samples], 
+         cellwidth = 12, 
+         cellheight = 10, 
+         annotation_row=metadata_gene,
+         main = paste('Heatmap of top 100 genes:', cond1, " vs ", cond2)) # , annotation_col=my_sample_col
 dev.off()
+
 # WRITE table
-write.table(tT, snakemake@output[[4]], sep="\t")
+write.table(tT, snakemake@output[[6]], sep="\t")
+
+
+w <- which(tT$table$FDR <.01 & abs(tT$table$logFC) > 1)
+locus_list <- tT$table$locus_tag[w] 
+genes_rpkm_filtered <- as.data.frame(genes_rpkm[locus_list,])
+
+m <- match(rownames(genes_rpkm_filtered), custom_annotation_table$locus_tag)
+
+gene <- custom_annotation_table$gene[m]
+product <- custom_annotation_table$product[m]
+annot <- paste0(rownames(genes_rpkm_filtered), '/', gene, '/', product)
+rownames(genes_rpkm_filtered) <- annot
+
+print("genes_rpkm_filtered")
+head(genes_rpkm_filtered)
+genes_rpkm_filtered$logFC <- tT$table$logFC[w] 
+head(genes_rpkm_filtered)
+# order by the absolute value of fold change
+genes_rpkm_filtered_ordered <- genes_rpkm_filtered[order(-abs(genes_rpkm_filtered$logFC)),]
+
+###  top 100 downregulated  ###
+# order by logFC
+genes_rpkm_filtered_ordered <- genes_rpkm_filtered_ordered[order(genes_rpkm_filtered_ordered$logFC),]
+# keep only downregulated genes 
+genes_rpkm_filtered_ordered_down <- genes_rpkm_filtered_ordered[genes_rpkm_filtered_ordered$logFC < 0,]
+if (length(genes_rpkm_filtered_ordered_down[,1]) > 100) {
+  genes_rpkm_filtered_ordered_down <- genes_rpkm_filtered_ordered_down[1:100,]
+}
+
+# calculate plot height and width according to labels size and number of rows 
+h <- 23 * length(genes_rpkm_filtered_ordered_down[,1])/100
+w <- 5 + nchar(max(rownames(genes_rpkm_filtered_ordered_down))) / 10
+
+svglite(snakemake@output[[7]], height=h, width=11)
+pheatmap(log2(genes_rpkm_filtered_ordered_down[,considered_samples] + 1), 
+         cellwidth = 20, 
+         cellheight = 14, 
+         cluster_rows=TRUE, 
+         cluster_cols=FALSE, 
+         main = paste('Top', length(genes_rpkm_filtered_ordered_down[,1]) ,' down:', cond2, " vs ", cond1)) # , annotation_col=my_sample_col
+dev.off()
+
+
+###  top 100 upregulated  ###
+# order by logFC
+genes_rpkm_filtered_ordered <- genes_rpkm_filtered_ordered[order(-genes_rpkm_filtered_ordered$logFC),]
+# keep only upregulated genes
+genes_rpkm_filtered_ordered_up <- genes_rpkm_filtered_ordered[genes_rpkm_filtered_ordered$logFC > 0,]
+if (length(genes_rpkm_filtered_ordered_up[,1]) > 100) {
+  genes_rpkm_filtered_ordered_up <- genes_rpkm_filtered_ordered_up[1:100,]
+}
+h <- 23 * length(genes_rpkm_filtered_ordered_up[,1])/100
+w <- 5 + nchar(max(rownames(genes_rpkm_filtered_ordered_up))) / 10
+svglite(snakemake@output[[8]], height=h, width=w)
+pheatmap(log2(genes_rpkm_filtered_ordered_up[,considered_samples] + 1), 
+         cellwidth = 20, 
+         cellheight = 14, 
+         cluster_rows=TRUE, 
+         cluster_cols=FALSE, 
+         main = paste('Top ', length(genes_rpkm_filtered_ordered_up[,1]) ,' up:', cond2, " vs ", cond1)) # , annotation_col=my_sample_col
+dev.off()
