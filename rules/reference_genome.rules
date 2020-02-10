@@ -65,13 +65,13 @@ if 'KEGG_accession' in config:
 
         shell: 
             """
-            curl -S http://rest.kegg.jp/link/pathway/{params[0]} > reference/reference_genome_kegg_pathways.txt
-            curl -S http://rest.kegg.jp/link/module/{params[0]} >> reference/reference_genome_kegg_modules.txt
-            curl -S http://rest.kegg.jp/link/ko/{params[0]} >> reference/reference_genome_kegg_ko.txt
+            curl -S http://rest.kegg.jp/link/pathway/{params[0]} | sed 's/{params.KEGG_accession}://g' | sed 's/path:{params.KEGG_accession}/map/' > reference/reference_genome_kegg_pathways.txt
+            curl -S http://rest.kegg.jp/link/module/{params[0]} | sed 's/{params.KEGG_accession}://g' | sed 's/md:{params.KEGG_accession}_//'>> reference/reference_genome_kegg_modules.txt
+            curl -S http://rest.kegg.jp/link/ko/{params[0]} | sed 's/{params.KEGG_accession}://g' | sed 's/ko://g' >> reference/reference_genome_kegg_ko.txt
 
-            curl -S http://rest.kegg.jp/list/module > reference/module_description.txt
-            curl -S http://rest.kegg.jp/list/pathway > reference/pathway_description.txt
-            curl -S http://rest.kegg.jp/list/ko > reference/ko_description.txt
+            curl -S http://rest.kegg.jp/list/module | sed 's/md://' > reference/module_description.txt
+            curl -S http://rest.kegg.jp/list/pathway | sed 's/path://' > reference/pathway_description.txt
+            curl -S http://rest.kegg.jp/list/ko | sed 's/ko://' > reference/ko_description.txt
             """
 
 if "uniprot_proteome" in config:
