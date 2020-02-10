@@ -56,12 +56,19 @@ for htseq_file in htseq_files:
 with open(output_file, 'w') as o:
     for n, sample in enumerate(sample2data.keys()):
         if n == 0:
-            o.write("sample\tnot_aligned\tno_feature\taligned\t0\t>0\t>10\t>100\t>1000\t>10000\\n")
+            o.write("sample\ttotal_non_ambiguous\tnot_aligned\tnot_aligned_percent\taligned\taligned_percent\tno_feature\tpercent_aligned\t0\t>0\t>10\t>100\t>1000\t>10000\n")
         total_non_ambiguous_reads = int(sample2data[sample]["__not_aligned"]) + sample2data[sample]["total"]
+
+        percent_mapped = round((int(sample2data[sample]["__not_aligned"])*100/total_non_ambiguous_reads), 2)
+        percent_non_mapped = round((int(sample2data[sample]["total"])*100/total_non_ambiguous_reads), 2)
+
         o.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (sample,
+                                          total_non_ambiguous_reads,
                                           sample2data[sample]["__not_aligned"],
-                                          sample2data[sample]["__no_feature"],
+                                          percent_non_mapped,
                                           sample2data[sample]["total"],
+                                          percent_mapped,
+                                          sample2data[sample]["__no_feature"],
                                           sample2data[sample]["equal_0"],
                                           sample2data[sample]["larger_than_0"],
                                           sample2data[sample]["larger_than_10"],
