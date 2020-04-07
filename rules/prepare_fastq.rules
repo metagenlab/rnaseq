@@ -1,4 +1,5 @@
 
+'''
 rule copy_fastq_paired_from_link:
     input:
         lambda wildcards: expand(link_directory + original_names[wildcards.sample] + "_{ext}", ext=read_naming[wildcards.sample])
@@ -13,6 +14,7 @@ rule copy_fastq_paired_from_link:
         cp {input[1]} {output[1]}
         """
 
+
 rule copy_fastq_single_from_link:
     input:
         lambda wildcards: link_directory + original_names[wildcards.sample]+ "_" + read_naming[wildcards.sample][0]
@@ -23,6 +25,8 @@ rule copy_fastq_single_from_link:
         gzip -t {input[0]}
         cp {input[0]} {output[0]}
         """
+'''
+
 
 rule download_sra:
     conda:
