@@ -1,6 +1,7 @@
 
 import pandas
 import re
+import math
 
 locus_tag2pathway = pandas.read_csv(snakemake.input["locus_tag2pathway"], sep="\t", names=["locus_tag","pathway"])
 
@@ -44,12 +45,14 @@ for pathway, row in pathway2rpkm_sum.iterrows():
     m = [str(i/float(n_genes)) for i in row[rpkm_column_list]]
     median_rpkm.append([label] + m)
 
+# MEAN
 with open(snakemake.output[0], 'w') as f:
     h = ["pathway"] + rpkm_column_list
     f.write("\t".join(h) + '\n')
     for row in median_rpkm:
         f.write("\t".join(row) + '\n')
 
+# SUM
 with open(snakemake.output[1], 'w') as f:
     h = ["pathway"] + rpkm_column_list
     f.write("\t".join(h) + '\n')
@@ -57,3 +60,19 @@ with open(snakemake.output[1], 'w') as f:
         r = [pathway] + [str(i) for i in row[rpkm_column_list]]
         f.write("\t".join(r) + '\n')
 
+# DEATIL
+with open(snakemake.output[2], 'w') as f:
+    h = ["label"] + column_list
+    f.write("\t".join(h) + '\n')
+    for locus_tag, row in df_pathway[column_list].iterrows():
+        pathway = row["pathway"]
+        print(pathway)
+        print(type(pathway))
+        if isinstance(pathway, float):
+            pathway = None
+            description = None 
+        else:
+            description = pathway2description[pathway]
+        label = f"{pathway}/{description}"
+        r = [label] + [str(i) for i in row[column_list]]
+        f.write("\t".join(r) + '\n')
