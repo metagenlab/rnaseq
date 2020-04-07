@@ -14,7 +14,7 @@ subset <- counts[,2:length(counts)]
 row.names(subset) <- counts[,1]
 
 svglite(snakemake@output[[1]], height=23, width=9)
-pheatmap(as.matrix(subset), 
+pheatmap(as.matrix(log2(subset)), 
          cellwidth = 12, 
          cellheight = 10, 
          main = "Heatmap") # , annotation_col=my_sample_col
