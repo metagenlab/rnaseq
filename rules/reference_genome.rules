@@ -1,10 +1,10 @@
-rule decompress_any:
-    input:
-        "{any}/{file}.gz"
-    output:
-        "{any}/{file}"
-    shell:
-        "gunzip {input[0]}"
+#rule decompress_any:
+#    input:
+#        "{any}/{file}.gz"
+#    output:
+#        "{any}/{file}"
+#    shell:
+#        "gunzip {input[0]}"
 
 if 'reference_fna' in config and 'reference_gff' in config and 'assembly_accession' in config:
     raise IOError("Either specify the path to gff and fna files or the NCBI assembly accession, not both!")
@@ -166,10 +166,10 @@ if "uniprot_proteome" in config:
 
     rule COG2annotations:
         input:
-            "reference/reference_genome_uniprotKB_COG.txt",
+            "reference/reference_genome_{uniprotkb_or_local}_COG.txt",
             "reference/NOG.annotations.tsv.gz"
         output:
-            "reference/COG_annotations.tsv"
+            "reference/COG_annotations_{uniprotkb_or_local}.tsv"
         run:
             import gzip
             COG2annotions = {}
