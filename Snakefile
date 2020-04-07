@@ -15,6 +15,7 @@ include: "rules/counts.rules"
 include: "rules/reads_sample.rules"
 include: "rules/edgeR.rules"
 include: "rules/kegg.rules"
+include: "rules/COG.rules"
 include: "rules/reference_genome.rules"
 
 rule rarefaction:
