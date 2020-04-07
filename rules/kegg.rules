@@ -47,9 +47,21 @@ rule get_pathway_rpkm_mean:
     output:
         "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_pathways_rpkm_mean.tsv",
         "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_pathways_rpkm_sum.tsv",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_pathways_rpkm_detail.tsv",
     script: "scripts/KEGG_pathway_rpkm.py"
 
-rule module_rpkm_heatmap:
+
+rule rpkm_heatmap_detail:
+    conda:
+        "../envs/edger.yml"
+    input:
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_{module_or_pathway}_rpkm_detail.tsv",
+    output:
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_{module_or_pathway}_rpkm_detail.svg",
+    script: "scripts/rpkm_heatmap_detail.R"
+
+
+rule rpkm_heatmap_mean:
     conda:
         "../envs/edger.yml"
     input:
