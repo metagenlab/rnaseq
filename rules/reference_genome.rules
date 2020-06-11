@@ -154,6 +154,54 @@ if "uniprot_proteome" in config:
             o.close()            
 
 
+    rule download_GO_from_uniprotKB:
+        params:
+            uniprot_proteome = lambda wildcards: config["uniprot_proteome"]  
+        output:
+            "reference/reference_genome_uniprotKB_go.txt"
+        run:
+            import requests
+
+            url = 'https://sparql.uniprot.org/'
+
+            query = """
+                    PREFIX up:<http://purl.uniprot.org/core/> 
+                    PREFIX keywords:<http://purl.uniprot.org/keywords/> 
+                    PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#> 
+                    SELECT DISTINCT ?protein ?goTerm $orf
+                    WHERE
+                    {
+                    ?protein a up:Protein ;
+                            up:proteome ?proteome .
+                    ?protein up:encodedBy ?gene .
+                    ?gene up:locusName ?orf .
+                    ?protein rdfs:seeAlso ?dr .
+                    ?protein up:classifiedWith ?goTerm .
+                    VALUES (?proteome) {(<http://purl.uniprot.org/proteomes/%s#Chromosome>)}
+                    }
+                    """ % params[0]
+            o = open(output[0], "w")
+            r = requests.get(url, params = {'format': 'json', 'query': query})
+            data = r.json()
+            # {'orf': {'type': 'literal', 'value': 'b2145'}, 'protein': {'type': 'uri', 'value': 'http://purl.uniprot.org/uniprot/P64536'}, 'dr': {'type': 'uri', 'value': 'http://purl.uniprot.org/eggnog/ENOG41129X4'}}
+            locus_tag2go_list = {}
+            for i in data["results"]['bindings']:
+                print(i)
+                protein_accesson = i["protein"]["value"].split("/")[-1]
+                locus_tag = i["orf"]["value"]
+                go = i["goTerm"]["value"]
+                # skip keywords
+                if 'obolibrary.org' in go:
+                    go = ':'.join(go.split("/")[-1].split("_"))
+                    if locus_tag not in locus_tag2go_list:
+                        locus_tag2go_list[locus_tag] = []
+                    locus_tag2go_list[locus_tag].append(go)
+            # write table
+            for locus_tag in locus_tag2go_list:
+                o.write("%s\t%s\n" % (locus_tag, ';'.join(locus_tag2go_list[locus_tag])))
+            o.close()   
+
+
     rule download_eggNOG_annotations:
         params:
             uniprot_proteome = lambda wildcards: config["uniprot_proteome"]  
@@ -211,3 +259,37 @@ if "uniprot_proteome" in config:
             "annotations/merged_annotation.tab",
         script:
             "scripts/merge_annotations.py"
+
+
+    rule extract_complete_locus_list:
+        conda:
+            "../envs/python-r.yml"  
+        input:
+            "reference/reference_genome.gbff",
+        output:
+            "reference/reference_genome_locus_tags.tsv",
+        script: "scripts/gbk2locus_list.py"
+
+    rule download_go_obo:
+        output:
+            "reference/go.obo",
+            "reference/go_daily-termdb-data.date",
+        shell:
+            """
+            curl "http://current.geneontology.org/ontology/go.obo" > {output[0]};
+            date >> {output[1]}
+            """
+
+
+    rule get_gene_ontology_annotation:
+        conda:
+            "../envs/python-r.yml"
+        input:
+            faa_file = "reference/CP001928.faa",
+            go_obo = "reference/go.obo",
+            goa = "databases/goa/goa_uniprot.db",
+            uniparcdb = "databases/uniprot/uniparc/uniparc.db",
+        output:
+            go_annotations = "reference/reference_genome_GOA_go.txt"
+        script:
+            "scripts/get_go_annotation.py"
