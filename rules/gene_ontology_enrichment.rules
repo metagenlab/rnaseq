@@ -1,0 +1,18 @@
+
+rule gene_set_enrichment:
+    conda:
+        "../envs/goatools.yml"
+    input:
+        "reference/go.obo",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_{up_or_down}_locus_list.tsv",
+        "reference/reference_genome_locus_tags.tsv",
+        "reference/reference_genome_GOA_go.txt",
+    output:
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/GSEA/{condition_1}_vs_{condition_2}_{up_or_down}_FDR{FDR}_logFC{logFC}.txt"
+    shell:
+        """
+        # study
+        # population 
+        # association
+        find_enrichment.py --pval=0.05 --indent --obo {input[0]} {input[1]} {input[2]} {input[3]} >> {output[0]}
+        """
