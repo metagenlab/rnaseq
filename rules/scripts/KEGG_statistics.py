@@ -2,6 +2,9 @@
 import pandas
 import re
 
+FDR_cutoff = snakemake.params["FDR_cutoff"]
+logFC_cutoff = snakemake.params["logFC_cutoff"]
+
 # b0114	map00010
 locus_tag2pathway = pandas.read_csv(snakemake.input["locus_tag2pathway"], sep="\t", names=["locus_tag","pathway"])
 
@@ -25,11 +28,11 @@ count_table = pandas.read_csv(snakemake.input["count_file"], sep="\t", index_col
 df_module = count_table.join(locus_tag2module.set_index('locus_tag'), on='locus_tag')
 df_pathway = count_table.join(locus_tag2pathway.set_index('locus_tag'), on='locus_tag')
 
-module2n_up = df_module[['module', 'locus_tag', 'FDR', 'logFC']].query('FDR < 0.01 and logFC > 0')[['module']].groupby("module").size().to_dict()
-module2n_down = df_module[['module', 'locus_tag', 'FDR', 'logFC']].query('FDR < 0.01 and logFC < 0')[['module']].groupby("module").size().to_dict()
+module2n_up = df_module[['module', 'locus_tag', 'FDR', 'logFC']].query(f'FDR < {FDR_cutoff} and logFC > {logFC_cutoff}')[['module']].groupby("module").size().to_dict()
+module2n_down = df_module[['module', 'locus_tag', 'FDR', 'logFC']].query(f'FDR < {FDR_cutoff} and logFC < {logFC_cutoff}')[['module']].groupby("module").size().to_dict()
 
-pathway2n_up = df_pathway[["pathway", 'locus_tag', 'FDR', 'logFC']].query('FDR < 0.01 and logFC > 0')[["pathway"]].groupby("pathway").size().to_dict()
-pathway2n_down = df_pathway[["pathway", 'locus_tag', 'FDR', 'logFC']].query('FDR < 0.01 and logFC < 0')[["pathway"]].groupby("pathway").size().to_dict()
+pathway2n_up = df_pathway[["pathway", 'locus_tag', 'FDR', 'logFC']].query(f'FDR < {FDR_cutoff} and logFC > {logFC_cutoff}')[["pathway"]].groupby("pathway").size().to_dict()
+pathway2n_down = df_pathway[["pathway", 'locus_tag', 'FDR', 'logFC']].query(f'FDR < {FDR_cutoff} and logFC < {logFC_cutoff}')[["pathway"]].groupby("pathway").size().to_dict()
 
 module2n_genes = locus_tag2module.groupby("module").size().to_dict()
 pathway2n_genes = locus_tag2pathway.groupby("pathway").size().to_dict()
