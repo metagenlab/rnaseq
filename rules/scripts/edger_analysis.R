@@ -7,25 +7,18 @@ library("pheatmap")
 library("stringr")
 library("svglite")
 
-split_path <- function(path) {
-  if (dirname(path) %in% c(".", path)) return(basename(path))
-  return(c(basename(path), split_path(dirname(path))))
-}
 
 # cutoffs for filtering
-FDR_cutoff = snakemake@params$FDR_cutoff
-logFC_cutoff = snakemake@params$logFC_cutoff
+FDR_cutoff = as.numeric(snakemake@params$FDR_cutoff)
+logFC_cutoff =  as.numeric(snakemake@params$logFC_cutoff)
+cond1 <- snakemake@params$cond1
+cond2 <- snakemake@params$cond2
 
-print("FRD_cutoff", FDR_cutoff)
+print("FDR_cutoff", FDR_cutoff)
 print(FDR_cutoff/2)
 
 # READ COUNT TABLE
 read_counts <- read.table(snakemake@input$count_file, header=T)
-
-# extract conditions from output path
-path <- split_path(snakemake@output[[1]])
-cond1 <- strsplit(path[[2]], '_vs_')[[1]][[1]]
-cond2 <- strsplit(path[[2]], '_vs_')[[1]][[2]]
 
 # READ custom_annotation table 
 custom_annotation_table <- read.csv(snakemake@params$annotation, header=T, as.is=T, stringsAsFactors = FALSE, sep="\t")
@@ -76,6 +69,8 @@ tT <- topTags(de, n = nrow(d))
 deg.list <- tT$table
 # cutoffs
 w <- which(tT$table$FDR < FDR_cutoff & abs(tT$table$logFC) > logFC_cutoff)
+print("number of match after foilter")
+print(length(w))
 tT$table$signif <- FALSE
 tT$table$signif[w] <- TRUE
 
@@ -83,36 +78,23 @@ locus_tags <- rownames(deg.list)
 # select genes that have 10% false discovery rate
 top.deg <- locus_tags[deg.list$FDR < FDR_cutoff]
 
-## VOLCANO PLOT: cutoffs of 0.01 FDR and 2 logFC
-pdf(snakemake@output[[2]])
-  plot(deg.list$logFC, -log10(deg.list$FDR), # PValue
-      pch=20, main=paste(cond1, "vs", cond2, "comparison"),
-      xlab = "Log2 Fold Change", ylab = "-log10(FDR)",
-      xlim=c(-max(abs(deg.list$logFC))*1.1, max(abs(deg.list$logFC))*1.1) )
-  with(subset(deg.list, FDR < .01 & abs(logFC) > 2), 
-      points(logFC, -log10(FDR), pch=20, col="red"))
-  s <- subset(deg.list, FDR < .01 & abs(logFC) > 2)
-  text(s$logFC, -log10(s$FDR), labels = paste(s$locus_tag, s$KO))
-  abline(v=2, lty=2, lwd=1, col="lightblue")
-  abline(v=-2, lty=2, lwd=1, col="lightblue")
-dev.off()
-
 ## VOLCANO PLOT: cutoffs of FRD and logFC as defined in config file
-pdf(snakemake@output[[3]])
+pdf(snakemake@output[[2]])
   plot(deg.list$logFC, -log10(deg.list$FDR), 
   pch=20, main=paste(cond1, "vs", cond2, "comparison"),
   xlab = "Log2 Fold Change", ylab = "-log10(FDR)", 
   xlim=c(-max(abs(deg.list$logFC))*1.1, max(abs(deg.list$logFC))*1.1))
-  with(subset(deg.list, FDR < FRD_cutoff & abs(deg.list$logFC) > logFC_cutoff), 
+  with(subset(deg.list, FDR < FDR_cutoff & abs(deg.list$logFC) > logFC_cutoff), 
   points(logFC, -log10(FDR), pch=20, col="red"))
-  s <- subset(deg.list, FDR < FRD_cutoff & abs(deg.list$logFC) > logFC_cutoff)
+  # cutoff for label hard coded to 2xfoldchange
+  s <- subset(deg.list, FDR < FDR_cutoff & abs(deg.list$logFC) > 2)
   text(s$logFC, -log10(s$FDR), labels = paste(s$locus_tag, s$KO))
   abline(v=1, lty=2, lwd=1, col="lightblue")
   abline(v=-1, lty=2, lwd=1, col="lightblue")
 dev.off()
 
 ## plot SMEAR
-pdf(snakemake@output[[4]])
+pdf(snakemake@output[[3]])
 plotSmear(de, de.tags = top.deg, main = paste(cond1, "vs", cond2, "comparison"))
 dev.off()
 
@@ -169,8 +151,11 @@ w <- length(considered_samples)*2.5 + nchar(max(rownames(log_rpkm.topgenes))) / 
 ###  top 100 genes heatmap ######
 #################################
 
+print("heatmap top 100")
 
-svglite(snakemake@output[[5]], height=23, width=w)
+print(head(log_rpkm.topgenes[,considered_samples]))
+
+svglite(snakemake@output[[4]], height=23, width=w)
 pheatmap(log_rpkm.topgenes[,considered_samples], 
          cellwidth = 12, 
          cellheight = 10, 
@@ -182,12 +167,21 @@ dev.off()
 ###  Write table ################
 #################################
 
-write.table(tT, snakemake@output[[6]], sep="\t")
 
-# filter according to config file cutoffs for FRD and logFC
-w <- which(tT$table$FDR < FRD_cutoff & abs(tT$table$logFC) > logFC_cutoff)
+
+write.table(tT, snakemake@output[[5]], sep="\t")
+
+# filter according to wildcards cutoffs for FRD and logFC
+w <- which(tT$table$FDR < FDR_cutoff & abs(tT$table$logFC) > logFC_cutoff)
 
 locus_list <- tT$table$locus_tag[w] 
+w_up <- which(tT$table$FDR < FDR_cutoff & abs(tT$table$logFC) > logFC_cutoff & tT$table$logFC > 0 )
+w_down <- which(tT$table$FDR < FDR_cutoff & abs(tT$table$logFC) > logFC_cutoff & tT$table$logFC < 0 )
+locus_list_up <- tT$table$locus_tag[w_up]
+locus_list_down <- tT$table$locus_tag[w_down]
+write.table(locus_list_down, snakemake@output[[8]], sep="\t", col.names =F, row.names =F, quote = F)
+write.table(locus_list_up, snakemake@output[[9]], sep="\t", col.names =F, row.names =F, quote = F)
+
 genes_rpkm_filtered <- as.data.frame(genes_rpkm[locus_list,])
 genes_rpkm_filtered$logFC <- tT$table$logFC[w] 
 
@@ -217,7 +211,7 @@ if (length(genes_rpkm_filtered_ordered_down[,1]) > 100) {
 h <- 23 * length(genes_rpkm_filtered_ordered_down[,1])/100
 w <- 5 + nchar(max(rownames(genes_rpkm_filtered_ordered_down))) / 10
 
-svglite(snakemake@output[[7]], height=h, width=11)
+svglite(snakemake@output[[6]], height=h, width=11)
 pheatmap(log2(genes_rpkm_filtered_ordered_down[,considered_samples] + 1), 
          cellwidth = 20, 
          cellheight = 14, 
@@ -240,7 +234,7 @@ if (length(genes_rpkm_filtered_ordered_up[,1]) > 100) {
 }
 h <- 23 * length(genes_rpkm_filtered_ordered_up[,1])/100
 w <- 5 + nchar(max(rownames(genes_rpkm_filtered_ordered_up))) / 10
-svglite(snakemake@output[[8]], height=h, width=w)
+svglite(snakemake@output[[7]], height=h, width=w)
 pheatmap(log2(genes_rpkm_filtered_ordered_up[,considered_samples] + 1), 
          cellwidth = 20, 
          cellheight = 14, 
