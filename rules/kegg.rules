@@ -2,19 +2,22 @@
 rule KEGG_statistics:
     conda:
         "../envs/python-r.yml"
-    input:
-        count_file ="report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_counts.tsv",
+    input: 
+        count_file = "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_counts.tsv",
         locus_tag2pathway = "reference/reference_genome_kegg_pathways.txt",
         locus_tag2module = "reference/reference_genome_kegg_modules.txt",
         module2description = "reference/module_description.txt",
         pathway2description = "reference/pathway_description.txt",
         locus_tag2ko = "reference/reference_genome_kegg_ko.txt",
         ko2description = "reference/ko_description.txt"
+    params:
+        FDR_cutoff =  lambda wildcards: wildcards.FDR,
+        logFC_cutoff =  lambda wildcards: wildcards.logFC 
     output:
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_pathways.tsv",
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_modules.tsv",
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_pathways_genes.tsv",
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_modules_genes.tsv",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_pathways.tsv",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_modules.tsv",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_pathways_genes.tsv",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_modules_genes.tsv",
 
     script: "scripts/KEGG_statistics.py"
 
@@ -26,11 +29,11 @@ rule get_module_rpkm_mean:
         sample_table = config["local_samples"],
     input:
         rpkm_table = "report/rnaseq/edger/rpkm_table.tsv",
-        count_file ="report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_counts.tsv",
+        count_file ="report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_counts.tsv",
         locus_tag2module = "reference/reference_genome_kegg_modules.txt",
         module2description = "reference/module_description.txt",
     output:
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_modules_rpkm_mean.tsv",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_modules_rpkm_mean.tsv",
     script: "scripts/KEGG_module_rpkm.py"
 
 
@@ -41,13 +44,13 @@ rule get_pathway_rpkm_mean:
         sample_table = config["local_samples"],
     input:
         rpkm_table = "report/rnaseq/edger/rpkm_table.tsv",
-        count_file ="report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_counts.tsv",
+        count_file ="report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_counts.tsv",
         locus_tag2pathway = "reference/reference_genome_kegg_pathways.txt",
         pathway2description = "reference/pathway_description.txt",
     output:
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_pathways_rpkm_mean.tsv",
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_pathways_rpkm_sum.tsv",
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_pathways_rpkm_detail.tsv",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_pathways_rpkm_mean.tsv",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_pathways_rpkm_sum.tsv",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_pathways_rpkm_detail.tsv",
     script: "scripts/KEGG_pathway_rpkm.py"
 
 
@@ -55,9 +58,9 @@ rule rpkm_heatmap_detail:
     conda:
         "../envs/edger.yml"
     input:
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_{module_or_pathway}_rpkm_detail.tsv",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_{module_or_pathway}_rpkm_detail.tsv",
     output:
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_{module_or_pathway}_rpkm_detail.svg",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_{module_or_pathway}_rpkm_detail.svg",
     script: "scripts/rpkm_heatmap_detail.R"
 
 
@@ -65,7 +68,7 @@ rule rpkm_heatmap_mean:
     conda:
         "../envs/edger.yml"
     input:
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_{module_or_pathway}_rpkm_mean.tsv",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_{module_or_pathway}_rpkm_mean.tsv",
     output:
-        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_{module_or_pathway}_rpkm_mean.svg",
+        "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_{module_or_pathway}_rpkm_mean.svg",
     script: "scripts/rpkm_heatmap.R"
