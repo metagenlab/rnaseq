@@ -2,9 +2,10 @@
 import pandas
 import re
 
-locus_tag2COG = pandas.read_csv(snakemake.input["locus_tag2COG"], sep="\t", names=["locus_tag", "COG_corresp"]).set_index("locus_tag")
+FDR_cutoff = snakemake.params["FDR_cutoff"]
+logFC_cutoff = snakemake.params["logFC_cutoff"]
 
-print(locus_tag2COG)
+locus_tag2COG = pandas.read_csv(snakemake.input["locus_tag2COG"], sep="\t", names=["locus_tag", "COG_corresp"]).set_index("locus_tag")
 
 COG2annotation = pandas.read_csv(snakemake.input["COG2annotation"], sep="\t", names=["COG_corresp","COG_category", "COG_description2"]).set_index("COG_corresp")
 
@@ -17,8 +18,8 @@ df_COG = count_table.join(locus_tag2COG, on='locus_tag')
 
 df_cog_with_annotations = df_COG.join(COG2annotation, on='COG_corresp')
 
-COG_category2n_up = df_cog_with_annotations[['COG_category', 'locus_tag', 'FDR', 'logFC']].query('FDR < 0.01 and logFC > 0')[['COG_category']].groupby("COG_category").size().to_dict()
-COG_category2n_down = df_cog_with_annotations[['COG_category', 'locus_tag', 'FDR', 'logFC']].query('FDR < 0.01 and logFC < 0')[['COG_category']].groupby("COG_category").size().to_dict()
+COG_category2n_up = df_cog_with_annotations[['COG_category', 'locus_tag', 'FDR', 'logFC']].query(f'FDR < {FDR_cutoff} and logFC > {logFC_cutoff}')[['COG_category']].groupby("COG_category").size().to_dict()
+COG_category2n_down = df_cog_with_annotations[['COG_category', 'locus_tag', 'FDR', 'logFC']].query(f'FDR < {FDR_cutoff} and logFC < {logFC_cutoff}')[['COG_category']].groupby("COG_category").size().to_dict()
 
 print("updown", COG_category2n_up)
 
