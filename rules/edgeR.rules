@@ -37,22 +37,21 @@ if config["replicates"]:
         params:
             sample_table = config["local_samples"],
             annotation = "annotations/merged_annotation.tab",
-            FDR_cutoff = config["FDR_cutoff"],
-            logFC_cutoff = config["logFC_cutoff"]
+            FDR_cutoff =  lambda wildcards: wildcards.FDR,
+            logFC_cutoff =  lambda wildcards: wildcards.logFC,
+            cond1 =  lambda wildcards: wildcards.condition_1,
+            cond2 =  lambda wildcards: wildcards.condition_2 ,
         output:
-            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_plotMDS.pdf",
-            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_volcano_FDR0.01_logFC2.pdf",
-            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_volcano_FDR%s_logFC%s.pdf" % (config["FDR_cutoff"],
-                                                                                                                             config["logFC_cutoff"]),
-            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_plotSmear_FDR0.01.pdf",
-            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_heatmap_top_100_FRD%s_logFC%s.svg" % (config["FDR_cutoff"],
-                                                                                                                                     config["logFC_cutoff"]),
-            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_counts.tsv",
-            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_heatmap_top_100_down_FRD%s_logFC%s.svg" % (config["FDR_cutoff"],
-                                                                                                                                          config["logFC_cutoff"]),
-            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/{condition_1}_vs_{condition_2}_heatmap_top_100_up_FRD%s_logFC%s.svg" % (config["FDR_cutoff"],
-                                                                                                                                        config["logFC_cutoff"]),
-
+            # report/rnaseq/edger/24h_vs_BPDL/FDR01_logFC2/24h_vs_BPDL_counts.tsv
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_plotMDS.pdf",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_volcano.pdf",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_plotSmear.pdf",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_heatmap_top_100.svg",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_counts.tsv",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_heatmap_top_100_down.svg",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_heatmap_top_100_up.svg",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_downregulated_locus_list.tsv",
+            "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_upregulated_locus_list.tsv",
         script: "scripts/edger_analysis.R"
 
 else:
