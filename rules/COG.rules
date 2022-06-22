@@ -7,7 +7,8 @@ rule COG_statistics:
         count_file ="report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_counts.tsv",
         locus_tag2COG = "reference/reference_genome_{uniprotKB_or_local}_COG.txt",
         COG2annotation = "reference/COG_annotations_{uniprotKB_or_local}.tsv", # tab file: COG-acc, category, description
-        COG_category2description = "reference/fun2003-2014.tab"
+        COG_category2description = "reference/fun2003-2014.tab",
+        complete_locus_list = 'reference/reference_genome_locus_tags.tsv'
     params:
         FDR_cutoff =  lambda wildcards: wildcards.FDR,
         logFC_cutoff =  lambda wildcards: wildcards.logFC 

@@ -31,7 +31,10 @@ ko2description = pandas.read_csv(ko_description,
                            delimiter='\t',
                            names=["ko","description"]).set_index("ko").to_dict()["description"]
 for ko in list(ko2description.keys()):
-    ko_edit = ko.split(":")[1]
+    try:
+        ko_edit = ko.split(":")[1]
+    except IndexError:
+        ko_edit = ko
     if ko != ko_edit:
         ko2description[ko_edit] = ko2description[ko]
 
@@ -44,9 +47,20 @@ o.write("\t".join(header)+'\n')
 for rec in SeqIO.parse(reference_gbk, "genbank"):
     for feature in rec.features:
         if feature.type == 'CDS':
-            locus_tag = feature.qualifiers["locus_tag"][0]
-            product = feature.qualifiers["product"][0]
-            gene = feature.qualifiers["gene"][0]
+            try:
+                locus_tag = feature.qualifiers["locus_tag"][0]
+            except KeyError:
+                print("WARNING: skipping, no locus tag for:")
+                print(feature)
+                continue
+            try:
+                product = feature.qualifiers["product"][0]
+            except KeyError:
+                product = '-'
+            try:
+                gene = feature.qualifiers["gene"][0]
+            except KeyError:
+                gene = '-'
             try:
                 ko = locus_tag2ko[locus_tag]
                 ko_description = ko2description[ko]
@@ -61,7 +75,12 @@ for rec in SeqIO.parse(reference_gbk, "genbank"):
                 cog_description = '-'
             o.write(f'{locus_tag}\t{gene}\t{product}\t{cog_description}\t{ko}\t{ko_description}\t-\t-\n')
         if feature.type in ["tRNA", "rRNA", "ncRNA"]:
-            locus_tag = feature.qualifiers["locus_tag"][0]
+            try:
+                locus_tag = feature.qualifiers["locus_tag"][0]
+            except KeyError:
+                print("WARNING: skipping, no locus tag for:")
+                print(feature)
+                continue
             product = feature.qualifiers["product"][0]
             gene = feature.qualifiers["gene"][0]
             o.write(f'{locus_tag}\t{gene}\t{product}\t-\t-\t-\t-\t-\n')

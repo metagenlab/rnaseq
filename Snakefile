@@ -23,7 +23,7 @@ rule rarefaction:
     input:
         expand("samples/{sample}/reads/trimmed/fastqc/single_fastqc.html", sample=read_naming.keys()),
         "report/rnaseq/htseq/summary_all.tab",
-        expand("report/qualimap/{sample}/bwa/GCA_000092785/genome_results.txt", sample=read_naming.keys()),
+        expand("report/qualimap/{sample}/bwa/reference_genome/genome_results.txt", sample=read_naming.keys()),
         "aggregated/rarefaction.pdf",
 
 def condition_combination(wildcards):

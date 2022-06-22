@@ -62,7 +62,7 @@ with open(output_file, 'w') as o:
         percent_mapped = round((int(sample2data[sample]["__not_aligned"])*100/total_non_ambiguous_reads), 2)
         percent_non_mapped = round((int(sample2data[sample]["total"])*100/total_non_ambiguous_reads), 2)
 
-        o.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (sample,
+        o.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (sample,
                                           total_non_ambiguous_reads,
                                           sample2data[sample]["__not_aligned"],
                                           percent_non_mapped,

@@ -29,10 +29,10 @@ df_module = count_table.join(locus_tag2module.set_index('locus_tag'), on='locus_
 df_pathway = count_table.join(locus_tag2pathway.set_index('locus_tag'), on='locus_tag')
 
 module2n_up = df_module[['module', 'locus_tag', 'FDR', 'logFC']].query(f'FDR < {FDR_cutoff} and logFC > {logFC_cutoff}')[['module']].groupby("module").size().to_dict()
-module2n_down = df_module[['module', 'locus_tag', 'FDR', 'logFC']].query(f'FDR < {FDR_cutoff} and logFC < {logFC_cutoff}')[['module']].groupby("module").size().to_dict()
+module2n_down = df_module[['module', 'locus_tag', 'FDR', 'logFC']].query(f'FDR < {FDR_cutoff} and logFC < -{logFC_cutoff}')[['module']].groupby("module").size().to_dict()
 
 pathway2n_up = df_pathway[["pathway", 'locus_tag', 'FDR', 'logFC']].query(f'FDR < {FDR_cutoff} and logFC > {logFC_cutoff}')[["pathway"]].groupby("pathway").size().to_dict()
-pathway2n_down = df_pathway[["pathway", 'locus_tag', 'FDR', 'logFC']].query(f'FDR < {FDR_cutoff} and logFC < {logFC_cutoff}')[["pathway"]].groupby("pathway").size().to_dict()
+pathway2n_down = df_pathway[["pathway", 'locus_tag', 'FDR', 'logFC']].query(f'FDR < {FDR_cutoff} and logFC < -{logFC_cutoff}')[["pathway"]].groupby("pathway").size().to_dict()
 
 module2n_genes = locus_tag2module.groupby("module").size().to_dict()
 pathway2n_genes = locus_tag2pathway.groupby("pathway").size().to_dict()

@@ -10,7 +10,7 @@ rule htseq_count:
         "samples/{sample}/rnaseq/htseq/counts.txt"
     shell:
         """
-        htseq-count --stranded=no -t gene --idattr=locus_tag -f bam {input[1]} {input[0]} > {output[0]}
+        htseq-count --stranded=no -t CDS --idattr=locus_tag -f bam {input[1]} {input[0]} > {output[0]}
         """
 
 rule htseq_count_subsets:
@@ -23,7 +23,7 @@ rule htseq_count_subsets:
         "samples/{sample}/rnaseq/htseq/sample_{count}_counts.txt"
     shell:
         """
-        htseq-count --stranded=no -t gene --idattr=locus_tag -f bam {input[1]} {input[0]} > {output[0]}
+        htseq-count --stranded=no -t CDS --idattr=locus_tag -f bam {input[1]} {input[0]} > {output[0]}
         """
 
 rule counts_summary:

@@ -13,11 +13,11 @@ rule copy_fastq_paired_from_link:
         cp {input[0]} {output[0]}
         cp {input[1]} {output[1]}
         """
-
+'''
 
 rule copy_fastq_single_from_link:
     input:
-        lambda wildcards: link_directory + original_names[wildcards.sample]+ "_" + read_naming[wildcards.sample][0]
+        lambda wildcards: read_naming[wildcards.sample][0]
     output:
         temp("samples/{sample}/reads/raw/single_{sample}.fastq.gz")
     shell:
@@ -25,15 +25,16 @@ rule copy_fastq_single_from_link:
         gzip -t {input[0]}
         cp {input[0]} {output[0]}
         """
-'''
+
+
 
 
 rule download_sra:
     conda:
-        "../../envs/sra-tools.yml"
+        "../envs/sra-tools.yml"
     output:
         # /home/pipeline_user/ncbi/public
-        temp("%s/ncbi/public/sra/{sample}.sra" % os.getenv("HOME")),
+        "%s/ncbi/public/sra/{sample}.sra" % os.getenv("HOME"),
     log:
         logging_folder + "samples/{sample}/sras/dump.txt"
     params:
@@ -45,14 +46,15 @@ rule download_sra:
         prefetch -v {wildcards.sample} --max-size 100000000 &> {log}
         """
 
+
 rule sra_convert_to_fastq_paired:
     conda:
         "../../envs/sra-tools.yml"
     input:
-        temp("%s/ncbi/public/sra/{sample}.sra" % os.getenv("HOME")),
+        "%s/ncbi/public/sra/{sample}.sra" % os.getenv("HOME"),
     output:
-        temp(link_directory + "{sample,[A-Za-z0-9]+}_1.fastq.gz"),
-        temp(link_directory + "{sample,[A-Za-z0-9]+}_2.fastq.gz"),
+        link_directory + "{sample,[A-Za-z0-9]+}_1.fastq.gz",
+        link_directory + "{sample,[A-Za-z0-9]+}_2.fastq.gz",
     log:
         "log/sra_download/{sample}_dump.txt",
     shell:
@@ -62,11 +64,11 @@ rule sra_convert_to_fastq_paired:
 
 rule sra_convert_to_fastq_single:
     conda:
-        "../../envs/sra-tools.yml"
+        "../envs/sra-tools.yml"
     input:
-        temp("%s/ncbi/public/sra/{sample}.sra" % os.getenv("HOME")),
+        "%s/ncbi/public/sra/{sample}.sra" % os.getenv("HOME"),
     output:
-        temp(link_directory + "{sample,[A-Za-z0-9]+}.fastq.gz"),
+        link_directory + "{sample,[A-Za-z0-9]+}.fastq.gz",
     log:
         "log/sra_download/{sample}_dump.txt"
     shell:

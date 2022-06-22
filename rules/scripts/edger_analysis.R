@@ -6,7 +6,7 @@ library("ggplot2")
 library("pheatmap")
 library("stringr")
 library("svglite")
-
+library("ggfortify")
 
 # cutoffs for filtering
 FDR_cutoff = as.numeric(snakemake@params$FDR_cutoff)
@@ -14,11 +14,11 @@ logFC_cutoff =  as.numeric(snakemake@params$logFC_cutoff)
 cond1 <- snakemake@params$cond1
 cond2 <- snakemake@params$cond2
 
-print("FDR_cutoff", FDR_cutoff)
-print(FDR_cutoff/2)
+#print("FDR_cutoff", FDR_cutoff)
+#print(FDR_cutoff/2)
 
 # READ COUNT TABLE
-read_counts <- read.table(snakemake@input$count_file, header=T)
+read_counts <- read.table(snakemake@input$count_file, header=T) # , check.names=FALSE
 
 # READ custom_annotation table 
 custom_annotation_table <- read.csv(snakemake@params$annotation, header=T, as.is=T, stringsAsFactors = FALSE, sep="\t")
@@ -30,12 +30,19 @@ sample_info_table[,"total_reads"] <- NA
 # read reference gff
 annotations <- readGFF(snakemake@input$reference_gff)
 annotations <- annotations[annotations$type == 'gene',]
+print("adding rownames")
 rownames(annotations) <- annotations$locus_tag
-
+print("ok")
 m <- match(annotations$locus_tag, custom_annotation_table$locus_tag)
-
 annotations <- cbind(annotations, custom_annotation_table[m,])
 
+m <- match(rownames(read_counts), annotations$locus_tag)
+annotations <- annotations[m,]
+
+print("dim read_counts")
+dim(read_counts)
+print("dim genes")
+dim(annotations)
 # get DGEList
 y <- DGEList(counts=read_counts, 
              samples=sample_info_table, 
@@ -47,11 +54,42 @@ keep <- filterByExpr(y)
 
 y <- y[keep, , keep.lib.sizes=FALSE]
 y <- calcNormFactors(y)
-y$samples
 
+
+print(y$samples)
+
+
+pdf("test_norm_qc1.pdf")
+plotMD(cpm(y, log=TRUE), column=1)
+abline(h=0, col="red", lty=2, lwd=2)
+dev.off()
+pdf("test_norm_qc2.pdf")
+plotMD(cpm(y, log=TRUE), column=2)
+abline(h=0, col="red", lty=2, lwd=2)
+dev.off()
+
+my_data <- cpm(y, log=T)
+
+#pca <- prcomp(t(my_data), scale = F)
+#expl.var <- round(pca$sdev^2/sum(pca$sdev^2)*100) # percent explained variance
+unscaled = prcomp(t(my_data))
+scaled = prcomp(t(my_data), scale = TRUE)
+expl.var <- round(unscaled$sdev^2/sum(unscaled$sdev^2)*100)
+# Let's plot the results as a screeplot
+print("OK")
+print(rownames(t(my_data)))
 pdf(snakemake@output[[1]])
-  plotMDS(y, top = 1000, labels = y$samples$SampleName, col = as.numeric(y$samples$group), 
-        pch = as.numeric(y$samples$group), cex = 2)
+  #par(mfrow=c(2,2))
+  #plot(unscaled)
+  #plot(scaled)
+  pc <- c(1,2)
+  plot(unscaled$x[,pc], 
+  xlab=paste0("PC ", pc[1], " (", expl.var[pc[1]], "%)"), 
+  ylab=paste0("PC ", pc[2], " (", expl.var[pc[2]], "%)"),
+  pch=20,
+  col=factor(sample_info_table$condition)
+  )
+  text(unscaled$x[,pc], labels=rownames(t(my_data)), cex = 1.5)
 dev.off()
 
 d <- estimateCommonDisp(y) 
@@ -69,12 +107,13 @@ tT <- topTags(de, n = nrow(d))
 deg.list <- tT$table
 # cutoffs
 w <- which(tT$table$FDR < FDR_cutoff & abs(tT$table$logFC) > logFC_cutoff)
-print("number of match after foilter")
-print(length(w))
+#print("number of match after foilter")
+#print(length(w))
 tT$table$signif <- FALSE
 tT$table$signif[w] <- TRUE
-
+print("locus tags")
 locus_tags <- rownames(deg.list)
+print("locus tags ok")
 # select genes that have 10% false discovery rate
 top.deg <- locus_tags[deg.list$FDR < FDR_cutoff]
 
@@ -88,7 +127,7 @@ pdf(snakemake@output[[2]])
   points(logFC, -log10(FDR), pch=20, col="red"))
   # cutoff for label hard coded to 2xfoldchange
   s <- subset(deg.list, FDR < FDR_cutoff & abs(deg.list$logFC) > 2)
-  text(s$logFC, -log10(s$FDR), labels = paste(s$locus_tag, s$KO))
+  #text(s$logFC, -log10(s$FDR), labels = paste(s$locus_tag, s$KO))
   abline(v=1, lty=2, lwd=1, col="lightblue")
   abline(v=-1, lty=2, lwd=1, col="lightblue")
 dev.off()
@@ -112,21 +151,50 @@ ggplot(dfFilter, aes(x = value, colour = variable, fill = variable)) +
   theme(legend.position = "top") + xlab("log2(counts)") + ggtitle("log2(counts) distribution")
 dev.off()
 
+
+heatmap.plotting.replicates <- function(x, name){
+	# calculate the spearman correlation on your samples
+  spearman.tissue <- melt(cor(x, method = "pearson")) # spearman
+	colnames(spearman.tissue)[3] <- "spear.corr"
+  p <- ggplot(spearman.tissue, aes(Var1, Var2)) +
+  geom_tile(aes(fill = spear.corr, color = "gray", width=0.95, height=0.95)) + 
+  geom_text(aes(label = round(spear.corr, 4)), size = 4.3) +
+  scale_fill_gradient(low = "white", high = "red") +
+  theme(legend.title = element_blank(),
+        axis.text.x = element_text(angle=30,hjust=1,vjust=1.0,size = 14),
+        axis.text.y = element_text(size = 14))
+	return(p)
+}
+
+pdf("pseudocounts_pearson.pdf")
+#  pearson
+heatmap.plotting.replicates(pseudo_counts, "heatmap-pearson")
+dev.off()
+
 pdf("pseudocounts_boxplots.pdf")
 ggplot(dfFilter, aes(x=sample, y=value)) + 
   geom_boxplot(outlier.colour="red", outlier.shape=8, outlier.size=4)+ facet_wrap(~ condition)
 dev.off()
 
 annotations$gene_length <- (annotations$end - annotations$start) + 1
+print("match")
 m <- match(rownames(de$genes), rownames(annotations))
+print("match ok")
 y$genes$length <- annotations$gene_length[m]
 
 genes_rpkm <- rpkm(y)
 
 considered_samples <- sample_info_table$SampleName[sample_info_table$condition %in% c(cond1, cond2)]
 considered_samples <- str_replace(considered_samples, "-", ".")
-
+print("------dim rpkm-----")
+dim(genes_rpkm)
+head(genes_rpkm)
+if (length(deg.list[,1])>=100){
 log_rpkm.topgenes <- log2(genes_rpkm[rownames(deg.list[1:100,]), considered_samples]+1)
+} else {
+log_rpkm.topgenes <- log2(genes_rpkm[rownames(deg.list[1:length(deg.list[,1]),]), considered_samples]+1)
+}
+
 m <- match(rownames(log_rpkm.topgenes), custom_annotation_table$locus_tag)
 
 gene <- custom_annotation_table$gene[m]
@@ -151,9 +219,9 @@ w <- length(considered_samples)*2.5 + nchar(max(rownames(log_rpkm.topgenes))) / 
 ###  top 100 genes heatmap ######
 #################################
 
-print("heatmap top 100")
+#print("heatmap top 100")
 
-print(head(log_rpkm.topgenes[,considered_samples]))
+#print(head(log_rpkm.topgenes[,considered_samples]))
 
 svglite(snakemake@output[[4]], height=23, width=w)
 pheatmap(log_rpkm.topgenes[,considered_samples], 

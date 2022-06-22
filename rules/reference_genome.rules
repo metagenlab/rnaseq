@@ -140,6 +140,7 @@ if "uniprot_proteome" in config:
                     VALUES (?proteome) {(<http://purl.uniprot.org/proteomes/%s#Chromosome>)}
                     }
                     """ % params[0]
+            print(query)
             o = open(output[0], "w")
             r = requests.get(url, params = {'format': 'json', 'query': query})
             data = r.json()
