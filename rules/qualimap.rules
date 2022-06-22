@@ -21,3 +21,18 @@ rule assess_mapping_with_qualimap:
             touch {output[genome_results]}
         fi
         """
+
+rule mapping_stats:
+    input:
+        expand("report/qualimap/{sample}/bwa/reference_genome/genome_results.txt", sample=read_naming.keys()),
+    output:
+        "report/mapping_summary.tsv"
+    shell:
+        """
+        for file in {input}; do
+            sample=`grep "outfile" $file  | sed 's+.*qualimap/++' | sed 's+/.*++'`
+            n_reads=`grep "number of reads" $file  | sed 's/.*= //' | sed 's/,//g'`
+            n_mapped_reads=`grep "number of mapped reads" $file  | sed 's/.*= //' | sed 's/,//g' | sed 's/ .*//'`
+            percent_mappd=`grep "number of mapped reads" $file  | sed 's/.*= //' | sed 's/,//g' | sed 's/.* //' | sed 's/.* //' | sed 's/(//' | sed 's/)//' `
+            echo -e "$sample\t$n_reads\t$n_mapped_reads\t$percent_mappd" >> report/mapping_summary.tsv
+        """
