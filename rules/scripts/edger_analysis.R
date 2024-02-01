@@ -7,6 +7,7 @@ library("pheatmap")
 library("stringr")
 library("svglite")
 library("ggfortify")
+library(dplyr)
 
 # cutoffs for filtering
 FDR_cutoff = as.numeric(snakemake@params$FDR_cutoff)
@@ -29,20 +30,38 @@ sample_info_table[,"total_reads"] <- NA
 
 # read reference gff
 annotations <- readGFF(snakemake@input$reference_gff)
-annotations <- annotations[annotations$type == 'gene',]
-print("adding rownames")
+annotations <- annotations[annotations$type %in% c('gene', 'pseudogene'),]
+annotations <- annotations[annotations$gene_biotype != 'rRNA' ,]
+annotations <- annotations[annotations$gene_biotype != 'tRNA' ,]
+annotations <- as.data.frame(annotations)
+
+start_lst <- aggregate(annotations$start, by = list(annotations$locus_tag), min)
+end_lst <- aggregate(annotations$end, by = list(annotations$locus_tag), max)
+
+annotations <- annotations[!duplicated(annotations$locus_tag), ]
+annotations$start <- start_lst$x
+annotations$end <- end_lst$x
+
 rownames(annotations) <- annotations$locus_tag
-print("ok")
+
 m <- match(annotations$locus_tag, custom_annotation_table$locus_tag)
+
 annotations <- cbind(annotations, custom_annotation_table[m,])
 
+print("CHECK")
+print(head(annotations))
+
 m <- match(rownames(read_counts), annotations$locus_tag)
+
 annotations <- annotations[m,]
 
 print("dim read_counts")
 dim(read_counts)
 print("dim genes")
 dim(annotations)
+
+print(head(read_counts))
+print(head(annotations))
 # get DGEList
 y <- DGEList(counts=read_counts, 
              samples=sample_info_table, 
@@ -223,6 +242,8 @@ w <- length(considered_samples)*2.5 + nchar(max(rownames(log_rpkm.topgenes))) / 
 
 #print(head(log_rpkm.topgenes[,considered_samples]))
 
+print("Heatmap of top 100 genes")
+
 svglite(snakemake@output[[4]], height=23, width=w)
 pheatmap(log_rpkm.topgenes[,considered_samples], 
          cellwidth = 12, 
@@ -237,7 +258,7 @@ dev.off()
 
 
 
-write.table(tT, snakemake@output[[5]], sep="\t")
+write.table(tT, snakemake@output[[5]], sep="\t", row.names=FALSE)
 
 # filter according to wildcards cutoffs for FRD and logFC
 w <- which(tT$table$FDR < FDR_cutoff & abs(tT$table$logFC) > logFC_cutoff)
@@ -271,6 +292,8 @@ genes_rpkm_filtered_ordered <- genes_rpkm_filtered[order(-abs(genes_rpkm_filtere
 genes_rpkm_filtered_ordered <- genes_rpkm_filtered_ordered[order(genes_rpkm_filtered_ordered$logFC),]
 # keep only downregulated genes 
 genes_rpkm_filtered_ordered_down <- genes_rpkm_filtered_ordered[genes_rpkm_filtered_ordered$logFC < 0,]
+print("number of downregulated genes")
+print(length(genes_rpkm_filtered_ordered_down))
 if (length(genes_rpkm_filtered_ordered_down[,1]) > 100) {
   genes_rpkm_filtered_ordered_down <- genes_rpkm_filtered_ordered_down[1:100,]
 }
@@ -279,10 +302,11 @@ if (length(genes_rpkm_filtered_ordered_down[,1]) > 100) {
 h <- 23 * length(genes_rpkm_filtered_ordered_down[,1])/100
 w <- 5 + nchar(max(rownames(genes_rpkm_filtered_ordered_down))) / 10
 
+print("Heatmap Top 100 downregulated")
 svglite(snakemake@output[[6]], height=h, width=11)
 pheatmap(log2(genes_rpkm_filtered_ordered_down[,considered_samples] + 1), 
          cellwidth = 20, 
-         cellheight = 14, 
+         cellheight = 14,
          cluster_rows=TRUE, 
          cluster_cols=FALSE, 
          main = paste('Top', length(genes_rpkm_filtered_ordered_down[,1]) ,' down:', cond2, " vs ", cond1)) # , annotation_col=my_sample_col
@@ -297,12 +321,15 @@ dev.off()
 genes_rpkm_filtered_ordered <- genes_rpkm_filtered_ordered[order(-genes_rpkm_filtered_ordered$logFC),]
 # keep only upregulated genes
 genes_rpkm_filtered_ordered_up <- genes_rpkm_filtered_ordered[genes_rpkm_filtered_ordered$logFC > 0,]
+print("number of upregulated genes")
+print(length(genes_rpkm_filtered_ordered_up))
 if (length(genes_rpkm_filtered_ordered_up[,1]) > 100) {
   genes_rpkm_filtered_ordered_up <- genes_rpkm_filtered_ordered_up[1:100,]
 }
 h <- 23 * length(genes_rpkm_filtered_ordered_up[,1])/100
 w <- 5 + nchar(max(rownames(genes_rpkm_filtered_ordered_up))) / 10
 svglite(snakemake@output[[7]], height=h, width=w)
+print("Heatmap Top 100 upregulated")
 pheatmap(log2(genes_rpkm_filtered_ordered_up[,considered_samples] + 1), 
          cellwidth = 20, 
          cellheight = 14, 
