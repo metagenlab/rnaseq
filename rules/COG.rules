@@ -20,7 +20,7 @@ rule COG_statistics:
     
 rule COG_barchart:
     conda:
-        "../envs/python-r.yml"
+        "../envs/edger.yml"
     input:
         "report/rnaseq/edger/{condition_1}_vs_{condition_2}/FDR{FDR}_logFC{logFC}/{condition_1}_vs_{condition_2}_{uniprotKB_or_local}_COG.tsv",
     output:
