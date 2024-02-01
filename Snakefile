@@ -33,8 +33,8 @@ def condition_combination(wildcards):
         cond1, cond2 = pair
         file_list.append(f'report/rnaseq/edger/{cond1}_vs_{cond2}/FDR0.01_logFC0/{cond1}_vs_{cond2}_plotMDS.pdf')
         file_list.append(f'report/rnaseq/edger/{cond1}_vs_{cond2}/FDR0.01_logFC0/{cond1}_vs_{cond2}_modules.tsv')
-        file_list.append(f'report/rnaseq/edger/{cond1}_vs_{cond2}/FDR0.01_logFC0/{cond1}_vs_{cond2}_uniprotKB_COG.tsv')
-        file_list.append(f'report/rnaseq/edger/{cond1}_vs_{cond2}/FDR0.01_logFC0/{cond1}_vs_{cond2}_uniprotKB_COG.pdf')
+        file_list.append(f'report/rnaseq/edger/{cond1}_vs_{cond2}/FDR0.01_logFC0/{cond1}_vs_{cond2}_local_COG.tsv')
+        file_list.append(f'report/rnaseq/edger/{cond1}_vs_{cond2}/FDR0.01_logFC0/{cond1}_vs_{cond2}_local_COG.pdf')
     return file_list
 
 
